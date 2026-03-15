@@ -252,7 +252,7 @@ private fun BookshelfGrid(
 }
 
 @Composable
-private fun BookshelfActionRow(
+internal fun BookshelfActionRow(
     groupId: Long,
     onRefresh: () -> Unit,
     onBackToRoot: () -> Unit
@@ -307,7 +307,7 @@ private fun BookshelfGroupRow(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun BookListCard(
+internal fun BookListCard(
     book: BookshelfBookUi,
     showUnread: Boolean,
     showLastUpdateTime: Boolean,
@@ -393,7 +393,7 @@ private fun BookListCard(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun BookGridCard(
+internal fun BookGridCard(
     book: BookshelfBookUi,
     showUnread: Boolean,
     onClick: () -> Unit,
@@ -583,7 +583,7 @@ private fun BookCover(
 }
 
 @Composable
-private fun BookshelfEmptyState() {
+internal fun BookshelfEmptyState() {
     Column(
         modifier = Modifier
             .fillMaxSize()

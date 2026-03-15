@@ -10,11 +10,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:attachToActivity="false"
-        app:contentLayout="@layout/view_tab_layout_min"
         app:title="@string/bookshelf" />
 
-    <androidx.viewpager.widget.ViewPager
-        android:id="@+id/view_pager_bookshelf"
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/compose_bookshelf_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 

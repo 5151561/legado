@@ -1,40 +1,51 @@
-@file:Suppress("DEPRECATION")
-
 package io.legado.app.ui.main.bookshelf.style1
 
 import android.os.Bundle
 import android.view.View
-import android.view.ViewGroup
-import androidx.appcompat.widget.SearchView
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
-import androidx.fragment.app.FragmentStatePagerAdapter
-import com.google.android.material.tabs.TabLayout
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
 import io.legado.app.R
+import io.legado.app.constant.AppLog
+import io.legado.app.constant.EventBus
+import io.legado.app.data.AppDatabase
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.databinding.FragmentBookshelf1Binding
+import io.legado.app.help.book.isLocal
 import io.legado.app.help.config.AppConfig
-import io.legado.app.lib.theme.accentColor
-import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.book.group.GroupEditDialog
-import io.legado.app.ui.book.search.SearchActivity
+import io.legado.app.ui.book.info.BookInfoActivity
+import io.legado.app.ui.compose.theme.LegadoComposeTheme
 import io.legado.app.ui.main.bookshelf.BaseBookshelfFragment
-import io.legado.app.ui.main.bookshelf.style1.books.BooksFragment
-import io.legado.app.utils.isCreated
-import io.legado.app.utils.setEdgeEffectColor
+import io.legado.app.ui.main.bookshelf.style2.BookshelfBookUi
+import io.legado.app.ui.main.bookshelf.style2.BookshelfGroupUi
+import io.legado.app.utils.cnCompare
+import io.legado.app.utils.flowWithLifecycleAndDatabaseChangeFirst
+import io.legado.app.utils.observeEvent
 import io.legado.app.utils.showDialogFragment
+import io.legado.app.utils.startActivity
+import io.legado.app.utils.startActivityForBook
 import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
-import kotlin.collections.set
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlin.math.max
 
 /**
  * 书架界面
  */
-class BookshelfFragment1() : BaseBookshelfFragment(R.layout.fragment_bookshelf1),
-    TabLayout.OnTabSelectedListener,
-    SearchView.OnQueryTextListener {
+class BookshelfFragment1() : BaseBookshelfFragment(R.layout.fragment_bookshelf1) {
 
     constructor(position: Int) : this() {
         val bundle = Bundle()
@@ -43,146 +54,182 @@ class BookshelfFragment1() : BaseBookshelfFragment(R.layout.fragment_bookshelf1)
     }
 
     private val binding by viewBinding(FragmentBookshelf1Binding::bind)
-    private val adapter by lazy { TabFragmentPageAdapter(childFragmentManager) }
-    private val tabLayout: TabLayout by lazy {
-        binding.titleBar.findViewById(R.id.tab_layout)
-    }
     private val bookGroups = mutableListOf<BookGroup>()
-    private val fragmentMap = hashMapOf<Long, BooksFragment>()
-    override val groupId: Long get() = selectedGroup?.groupId ?: 0
+    private var booksFlowJob: Job? = null
+    private var booksMap: Map<String, Book> = emptyMap()
+
+    private var selectedTabIndex by mutableIntStateOf(0)
+    private var composeGroups by mutableStateOf(emptyList<BookshelfGroupUi>())
+    private var composeBooks by mutableStateOf(emptyList<BookshelfBookUi>())
+    private var scrollRequest by mutableIntStateOf(0)
+    private var showUnread by mutableStateOf(AppConfig.showUnread)
+    private var showLastUpdateTime by mutableStateOf(AppConfig.showLastUpdateTime)
+    private var isGridLayout by mutableStateOf(AppConfig.bookshelfLayout != 0)
+    private var gridColumns by mutableIntStateOf((AppConfig.bookshelfLayout + 2).coerceAtLeast(2))
+
+    override val groupId: Long
+        get() = selectedGroup?.groupId ?: BookGroup.IdAll
 
     override val books: List<Book>
-        get() {
-            val fragment = fragmentMap[groupId]
-            return fragment?.getBooks() ?: emptyList()
-        }
+        get() = booksMap.values.toList()
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
         setSupportToolbar(binding.titleBar.toolbar)
-        initView()
+        initComposeContent()
         initBookGroupData()
     }
 
+    private fun initComposeContent() {
+        binding.composeBookshelfContent.setContent {
+            LegadoComposeTheme {
+                BookshelfTabsComposeScreen(
+                    selectedTabIndex = selectedTabIndex.safeTabIndex(composeGroups.size),
+                    groups = composeGroups,
+                    books = composeBooks,
+                    showUnread = showUnread,
+                    showLastUpdateTime = showLastUpdateTime,
+                    isGrid = isGridLayout,
+                    gridColumns = gridColumns,
+                    scrollRequest = scrollRequest,
+                    onRefresh = { selectedGroup?.let { group -> refreshGroupBooks(group) } },
+                    onTabClick = ::onTabSelected,
+                    onTabLongClick = { group ->
+                        bookGroups.firstOrNull { it.groupId == group.groupId }?.let {
+                            showDialogFragment(GroupEditDialog(it))
+                        }
+                    },
+                    onBookClick = { item ->
+                        booksMap[item.bookUrl]?.let(::startActivityForBook)
+                    },
+                    onBookLongClick = { item ->
+                        booksMap[item.bookUrl]?.let { book ->
+                            startActivity<BookInfoActivity> {
+                                putExtra("name", book.name)
+                                putExtra("author", book.author)
+                            }
+                        }
+                    }
+                )
+            }
+        }
+    }
+
     private val selectedGroup: BookGroup?
-        get() = bookGroups.getOrNull(tabLayout.selectedTabPosition)
-
-    private fun initView() {
-        binding.viewPagerBookshelf.setEdgeEffectColor(primaryColor)
-        tabLayout.isTabIndicatorFullWidth = false
-        tabLayout.tabMode = TabLayout.MODE_SCROLLABLE
-        tabLayout.setSelectedTabIndicatorColor(requireContext().accentColor)
-        tabLayout.setupWithViewPager(binding.viewPagerBookshelf)
-        binding.viewPagerBookshelf.offscreenPageLimit = 1
-        binding.viewPagerBookshelf.adapter = adapter
-    }
-
-    override fun onQueryTextSubmit(query: String?): Boolean {
-        SearchActivity.start(requireContext(), query)
-        return false
-    }
-
-    override fun onQueryTextChange(newText: String?): Boolean {
-        return false
-    }
+        get() = bookGroups.getOrNull(selectedTabIndex)
 
     @Synchronized
     override fun upGroup(data: List<BookGroup>) {
         if (data.isEmpty()) {
             appDb.bookGroupDao.enableGroup(BookGroup.IdAll)
-        } else {
-            if (data != bookGroups) {
-                bookGroups.clear()
-                bookGroups.addAll(data)
-                adapter.notifyDataSetChanged()
-                selectLastTab()
-                for (i in 0 until adapter.count) {
-                    tabLayout.getTabAt(i)?.view?.setOnLongClickListener {
-                        showDialogFragment(GroupEditDialog(bookGroups[i]))
-                        true
-                    }
-                }
+            return
+        }
+        if (data != bookGroups) {
+            bookGroups.clear()
+            bookGroups.addAll(data)
+            composeGroups = data.map {
+                BookshelfGroupUi(
+                    groupId = it.groupId,
+                    groupName = it.groupName,
+                    cover = it.cover
+                )
             }
+            selectedTabIndex = AppConfig.saveTabPosition.safeTabIndex(bookGroups.size)
+            refreshSelectedTabBooks()
         }
     }
 
     override fun upSort() {
-        adapter.notifyDataSetChanged()
+        refreshSelectedTabBooks()
     }
 
-    private fun selectLastTab() {
-        tabLayout.post {
-            tabLayout.removeOnTabSelectedListener(this)
-            tabLayout.getTabAt(AppConfig.saveTabPosition)?.select()
-            tabLayout.addOnTabSelectedListener(this)
+    private fun onTabSelected(index: Int) {
+        if (index == selectedTabIndex) {
+            selectedGroup?.let { group ->
+                toastOnUi("${group.groupName}(${composeBooks.size})")
+            }
+            return
         }
+        selectedTabIndex = index
+        AppConfig.saveTabPosition = index
+        refreshSelectedTabBooks()
     }
 
-    override fun onTabReselected(tab: TabLayout.Tab) {
-        selectedGroup?.let { group ->
-            fragmentMap[group.groupId]?.let {
-                toastOnUi("${group.groupName}(${it.getBooksCount()})")
+    private fun refreshSelectedTabBooks() {
+        selectedGroup?.let { refreshGroupBooks(it) }
+    }
+
+    private fun refreshGroupBooks(group: BookGroup) {
+        updateSettings()
+        booksFlowJob?.cancel()
+        booksFlowJob = viewLifecycleOwner.lifecycleScope.launch {
+            appDb.bookDao.flowByGroup(group.groupId).map { list ->
+                when (group.getRealBookSort()) {
+                    1 -> list.sortedByDescending { it.latestChapterTime }
+                    2 -> list.sortedWith { o1, o2 -> o1.name.cnCompare(o2.name) }
+                    3 -> list.sortedBy { it.order }
+                    4 -> list.sortedByDescending { max(it.latestChapterTime, it.durChapterTime) }
+                    5 -> list.sortedWith { o1, o2 -> o1.author.cnCompare(o2.author) }
+                    else -> list.sortedByDescending { it.durChapterTime }
+                }
+            }.flowWithLifecycleAndDatabaseChangeFirst(
+                viewLifecycleOwner.lifecycle,
+                Lifecycle.State.RESUMED,
+                AppDatabase.BOOK_TABLE_NAME
+            ).catch {
+                AppLog.put("书架更新出错", it)
+            }.conflate().flowOn(Dispatchers.Default).collect { list ->
+                booksMap = list.associateBy { it.bookUrl }
+                composeBooks = list.map { book ->
+                    BookshelfBookUi(
+                        bookUrl = book.bookUrl,
+                        name = book.name,
+                        author = book.author,
+                        origin = book.origin,
+                        cover = book.getDisplayCover(),
+                        currentChapter = book.durChapterTitle,
+                        latestChapter = book.latestChapterTitle,
+                        latestChapterTime = book.latestChapterTime,
+                        unreadCount = book.getUnreadChapterNum(),
+                        lastCheckCount = book.lastCheckCount,
+                        isUpdating = activityViewModel.isUpdate(book.bookUrl),
+                        isLocal = book.isLocal
+                    )
+                }
+                delay(100)
             }
         }
     }
 
-    override fun onTabUnselected(tab: TabLayout.Tab) = Unit
+    private fun updateSettings() {
+        showUnread = AppConfig.showUnread
+        showLastUpdateTime = AppConfig.showLastUpdateTime
+        isGridLayout = AppConfig.bookshelfLayout != 0
+        gridColumns = (AppConfig.bookshelfLayout + 2).coerceAtLeast(2)
+    }
 
-    override fun onTabSelected(tab: TabLayout.Tab) {
-        AppConfig.saveTabPosition = tab.position
+    private fun refreshUpdatingState() {
+        composeBooks = composeBooks.map {
+            it.copy(isUpdating = activityViewModel.isUpdate(it.bookUrl))
+        }
     }
 
     override fun gotoTop() {
-        fragmentMap[groupId]?.gotoTop()
+        scrollRequest++
     }
 
-    private inner class TabFragmentPageAdapter(fm: FragmentManager) :
-        FragmentStatePagerAdapter(fm, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT) {
-
-        override fun getPageTitle(position: Int): CharSequence {
-            return bookGroups[position].groupName
+    override fun observeLiveBus() {
+        super.observeLiveBus()
+        observeEvent<String>(EventBus.UP_BOOKSHELF) {
+            refreshUpdatingState()
         }
-
-        /**
-         * 确定视图位置是否更改时调用
-         * @return POSITION_NONE 已更改,刷新视图. POSITION_UNCHANGED 未更改,不刷新视图
-         */
-        override fun getItemPosition(any: Any): Int {
-            val fragment = any as BooksFragment
-            val position = fragment.position
-            val group = bookGroups.getOrNull(position)
-            if (fragment.groupId != group?.groupId) {
-                return POSITION_NONE
-            }
-            val bookSort = group.getRealBookSort()
-            fragment.setEnableRefresh(group.enableRefresh)
-            if (fragment.bookSort != bookSort) {
-                fragment.upBookSort(bookSort)
-            }
-            return POSITION_UNCHANGED
+        observeEvent<String>(EventBus.BOOKSHELF_REFRESH) {
+            updateSettings()
+            refreshUpdatingState()
         }
+    }
 
-        override fun getItem(position: Int): Fragment {
-            val group = bookGroups[position]
-            return BooksFragment(position, group)
-        }
-
-        override fun getCount(): Int {
-            return bookGroups.size
-        }
-
-        override fun instantiateItem(container: ViewGroup, position: Int): Any {
-            var fragment = super.instantiateItem(container, position) as BooksFragment
-            val group = bookGroups[position]
-            /**
-             * Activity recreate 会复用之前的 Fragment，不正确的需要重新创建
-             */
-            if (fragment.isCreated && getItemPosition(fragment) == POSITION_NONE) {
-                destroyItem(container, position, fragment)
-                fragment = super.instantiateItem(container, position) as BooksFragment
-            }
-            fragmentMap[group.groupId] = fragment
-            return fragment
-        }
-
+    private fun Int.safeTabIndex(size: Int): Int {
+        if (size <= 0) return 0
+        return coerceIn(0, size - 1)
     }
 }
