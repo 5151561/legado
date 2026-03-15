@@ -1,21 +1,17 @@
-@file:Suppress("DEPRECATION")
-
 package io.legado.app.ui.main
 
 import android.os.Bundle
 import android.text.format.DateUtils
-import android.view.MenuItem
-import android.view.ViewGroup
+import android.view.View
 import androidx.activity.addCallback
 import androidx.activity.viewModels
-import androidx.core.view.get
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.view.postDelayed
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
-import androidx.fragment.app.FragmentStatePagerAdapter
 import androidx.lifecycle.lifecycleScope
-import androidx.viewpager.widget.ViewPager
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import io.legado.app.BuildConfig
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
@@ -31,10 +27,9 @@ import io.legado.app.help.config.LocalConfig
 import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.help.storage.Backup
 import io.legado.app.lib.dialogs.alert
-import io.legado.app.lib.theme.elevation
-import io.legado.app.lib.theme.primaryColor
 import io.legado.app.service.BaseReadAloudService
 import io.legado.app.ui.about.CrashLogsDialog
+import io.legado.app.ui.compose.theme.LegadoComposeTheme
 import io.legado.app.ui.main.bookshelf.BaseBookshelfFragment
 import io.legado.app.ui.main.bookshelf.style1.BookshelfFragment1
 import io.legado.app.ui.main.bookshelf.style2.BookshelfFragment2
@@ -42,12 +37,7 @@ import io.legado.app.ui.main.explore.ExploreFragment
 import io.legado.app.ui.main.my.MyFragment
 import io.legado.app.ui.main.rss.RssFragment
 import io.legado.app.ui.widget.dialog.TextDialog
-import io.legado.app.ui.widget.text.BadgeView
-import io.legado.app.utils.isCreated
-import io.legado.app.utils.navigationBarHeight
 import io.legado.app.utils.observeEvent
-import io.legado.app.utils.setEdgeEffectColor
-import io.legado.app.utils.setOnApplyWindowInsetsListenerCompat
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
@@ -55,53 +45,51 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import splitties.views.bottomPadding
 import kotlin.coroutines.resume
 
 /**
  * 主界面
  */
 @Suppress("PrivatePropertyName")
-class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
-    BottomNavigationView.OnNavigationItemSelectedListener,
-    BottomNavigationView.OnNavigationItemReselectedListener {
+class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>() {
 
     override val binding by viewBinding(ActivityMainBinding::inflate)
     override val viewModel by viewModels<MainViewModel>()
-    private val idBookshelf = 0
+
     private val idBookshelf1 = 11
     private val idBookshelf2 = 12
     private val idExplore = 1
     private val idRss = 2
     private val idMy = 3
+    private val fragmentContainerId = View.generateViewId()
+    private val fragmentMap = hashMapOf<Int, Fragment>()
+
     private var exitTime: Long = 0
     private var bookshelfReselected: Long = 0
     private var exploreReselected: Long = 0
-    private var pagePosition = 0
-    private val fragmentMap = hashMapOf<Int, Fragment>()
-    private var bottomMenuCount = 4
-    private val EXIT_INTERVAL = 2000L
-    private val realPositions = arrayOf(idBookshelf, idExplore, idRss, idMy)
-    private val adapter by lazy {
-        TabFragmentPageAdapter(supportFragmentManager)
-    }
-    private var onUpBooksBadgeView: BadgeView? = null
+    private var isFragmentContainerReady = false
+    private val exitInterval = 2000L
+
+    private var navigationItems by mutableStateOf(emptyList<MainNavigationItem>())
+    private var selectedMenuId by mutableIntStateOf(R.id.menu_bookshelf)
+    private var upBooksBadgeCount by mutableIntStateOf(0)
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
-        upBottomMenu()
-        initView()
-        upHomePage()
+        initComposeContent()
+        refreshNavigationItems()
+        applyDefaultHomePage()
         onBackPressedDispatcher.addCallback(this) {
-            if (pagePosition != 0) {
-                binding.viewPagerMain.currentItem = 0
+            val firstMenuId = navigationItems.firstOrNull()?.menuId ?: R.id.menu_bookshelf
+            if (selectedMenuId != firstMenuId) {
+                selectMenu(firstMenuId)
                 return@addCallback
             }
-            (fragmentMap[getFragmentId(0)] as? BookshelfFragment2)?.let {
+            (fragmentMap[currentBookshelfFragmentId()] as? BookshelfFragment2)?.let {
                 if (it.back()) {
                     return@addCallback
                 }
             }
-            if (System.currentTimeMillis() - exitTime > EXIT_INTERVAL) {
+            if (System.currentTimeMillis() - exitTime > exitInterval) {
                 toastOnUi(R.string.double_click_exit)
                 exitTime = System.currentTimeMillis()
             } else {
@@ -117,52 +105,59 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
         lifecycleScope.launch {
-            //隐私协议
             if (!privacyPolicy()) return@launch
-            //版本更新
             upVersion()
-            //设置本地密码
             setLocalPassword()
             notifyAppCrash()
-            //备份同步
             backupSync()
-            //自动更新书籍
             val isAutoRefreshedBook = savedInstanceState?.getBoolean("isAutoRefreshedBook") ?: false
             if (AppConfig.autoRefreshBook && !isAutoRefreshedBook) {
-                binding.viewPagerMain.postDelayed(1000) {
+                binding.composeViewMain.postDelayed(1000L) {
                     viewModel.upAllBookToc()
                 }
             }
-            binding.viewPagerMain.postDelayed(3000) {
+            binding.composeViewMain.postDelayed(3000L) {
                 viewModel.postLoad()
             }
         }
     }
 
-    override fun onNavigationItemSelected(item: MenuItem): Boolean = binding.run {
-        when (item.itemId) {
-            R.id.menu_bookshelf ->
-                viewPagerMain.setCurrentItem(0, false)
-
-            R.id.menu_discovery ->
-                viewPagerMain.setCurrentItem(realPositions.indexOf(idExplore), false)
-
-            R.id.menu_rss ->
-                viewPagerMain.setCurrentItem(realPositions.indexOf(idRss), false)
-
-            R.id.menu_my_config ->
-                viewPagerMain.setCurrentItem(realPositions.indexOf(idMy), false)
+    private fun initComposeContent() {
+        binding.composeViewMain.setContent {
+            LegadoComposeTheme {
+                MainActivityScreen(
+                    items = navigationItems,
+                    selectedMenuId = selectedMenuId,
+                    bookshelfBadgeCount = upBooksBadgeCount,
+                    fragmentContainerId = fragmentContainerId,
+                    onContainerReady = ::onFragmentContainerReady,
+                    onItemClick = ::onNavigationItemClick
+                )
+            }
         }
-        return false
     }
 
-    override fun onNavigationItemReselected(item: MenuItem) {
-        when (item.itemId) {
+    private fun onFragmentContainerReady() {
+        if (isFragmentContainerReady) return
+        isFragmentContainerReady = true
+        syncFragments()
+    }
+
+    private fun onNavigationItemClick(menuId: Int) {
+        if (menuId == selectedMenuId) {
+            onNavigationItemReselected(menuId)
+        } else {
+            selectMenu(menuId)
+        }
+    }
+
+    private fun onNavigationItemReselected(menuId: Int) {
+        when (menuId) {
             R.id.menu_bookshelf -> {
                 if (System.currentTimeMillis() - bookshelfReselected > 300) {
                     bookshelfReselected = System.currentTimeMillis()
                 } else {
-                    (fragmentMap[getFragmentId(0)] as? BaseBookshelfFragment)?.gotoTop()
+                    (fragmentMap[currentBookshelfFragmentId()] as? BaseBookshelfFragment)?.gotoTop()
                 }
             }
 
@@ -170,33 +165,144 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 if (System.currentTimeMillis() - exploreReselected > 300) {
                     exploreReselected = System.currentTimeMillis()
                 } else {
-                    (fragmentMap[1] as? ExploreFragment)?.compressExplore()
+                    (fragmentMap[idExplore] as? ExploreFragment)?.compressExplore()
                 }
             }
         }
     }
 
-    private fun initView() = binding.run {
-        viewPagerMain.setEdgeEffectColor(primaryColor)
-        viewPagerMain.offscreenPageLimit = 3
-        viewPagerMain.adapter = adapter
-        viewPagerMain.addOnPageChangeListener(PageChangeCallback())
-        bottomNavigationView.elevation = elevation
-        bottomNavigationView.setOnNavigationItemSelectedListener(this@MainActivity)
-        bottomNavigationView.setOnNavigationItemReselectedListener(this@MainActivity)
-        if (AppConfig.isEInkMode) {
-            bottomNavigationView.setBackgroundResource(R.drawable.bg_eink_border_top)
+    private fun selectMenu(menuId: Int) {
+        selectedMenuId = menuId
+        syncFragments()
+    }
+
+    private fun refreshNavigationItems(selectLast: Boolean = false) {
+        val newItems = buildNavigationItems()
+        navigationItems = newItems
+        val selectedExists = newItems.any { it.menuId == selectedMenuId }
+        selectedMenuId = when {
+            selectLast -> newItems.lastOrNull()?.menuId ?: R.id.menu_bookshelf
+            selectedExists -> selectedMenuId
+            else -> newItems.firstOrNull()?.menuId ?: R.id.menu_bookshelf
         }
-        bottomNavigationView.setOnApplyWindowInsetsListenerCompat { view, windowInsets ->
-            val height = windowInsets.navigationBarHeight
-            view.bottomPadding = height
-            windowInsets.inset(0, 0, 0, height)
+        if (!AppConfig.showWaitUpCount) {
+            upBooksBadgeCount = 0
+        }
+        syncFragments()
+    }
+
+    private fun applyDefaultHomePage() {
+        val targetMenuId = when (AppConfig.defaultHomePage) {
+            "explore" -> R.id.menu_discovery
+            "rss" -> R.id.menu_rss
+            "my" -> R.id.menu_my_config
+            else -> R.id.menu_bookshelf
+        }
+        if (navigationItems.any { it.menuId == targetMenuId }) {
+            selectedMenuId = targetMenuId
+        }
+        syncFragments()
+    }
+
+    private fun buildNavigationItems(): List<MainNavigationItem> {
+        val items = mutableListOf(
+            MainNavigationItem(
+                menuId = R.id.menu_bookshelf,
+                fragmentId = currentBookshelfFragmentId(),
+                selectedIconRes = R.drawable.ic_bottom_books_s,
+                unselectedIconRes = R.drawable.ic_bottom_books_e,
+                labelRes = R.string.bookshelf
+            )
+        )
+        if (AppConfig.showDiscovery) {
+            items += MainNavigationItem(
+                menuId = R.id.menu_discovery,
+                fragmentId = idExplore,
+                selectedIconRes = R.drawable.ic_bottom_explore_s,
+                unselectedIconRes = R.drawable.ic_bottom_explore_e,
+                labelRes = R.string.discovery
+            )
+        }
+        if (AppConfig.showRSS) {
+            items += MainNavigationItem(
+                menuId = R.id.menu_rss,
+                fragmentId = idRss,
+                selectedIconRes = R.drawable.ic_bottom_rss_feed_s,
+                unselectedIconRes = R.drawable.ic_bottom_rss_feed_e,
+                labelRes = R.string.rss
+            )
+        }
+        items += MainNavigationItem(
+            menuId = R.id.menu_my_config,
+            fragmentId = idMy,
+            selectedIconRes = R.drawable.ic_bottom_person_s,
+            unselectedIconRes = R.drawable.ic_bottom_person_e,
+            labelRes = R.string.my
+        )
+        return items
+    }
+
+    private fun currentBookshelfFragmentId(): Int {
+        return if (AppConfig.bookGroupStyle == 1) idBookshelf2 else idBookshelf1
+    }
+
+    private fun syncFragments() {
+        if (!isFragmentContainerReady || navigationItems.isEmpty()) return
+        if (supportFragmentManager.isStateSaved) {
+            binding.composeViewMain.post { if (!isDestroyed) syncFragments() }
+            return
+        }
+        val currentItem = navigationItems.find { it.menuId == selectedMenuId } ?: navigationItems.first()
+        val expectedFragmentIds = navigationItems.map { it.fragmentId }.toSet()
+        val transaction = supportFragmentManager.beginTransaction().setReorderingAllowed(true)
+
+        supportFragmentManager.fragments.forEach { fragment ->
+            val fragmentId = fragment.tag?.removePrefix(MAIN_FRAGMENT_TAG_PREFIX)?.toIntOrNull()
+            if (fragmentId != null && fragmentId !in expectedFragmentIds) {
+                transaction.remove(fragment)
+                fragmentMap.remove(fragmentId)
+            }
+        }
+
+        navigationItems.forEachIndexed { index, item ->
+            val fragment = obtainFragment(item.fragmentId, index)
+            fragmentMap[item.fragmentId] = fragment
+            if (fragment.isAdded) {
+                if (item.menuId == currentItem.menuId) {
+                    transaction.show(fragment)
+                } else {
+                    transaction.hide(fragment)
+                }
+            } else {
+                transaction.add(fragmentContainerId, fragment, fragmentTag(item.fragmentId))
+                if (item.menuId != currentItem.menuId) {
+                    transaction.hide(fragment)
+                }
+            }
+        }
+
+        transaction.commitNowAllowingStateLoss()
+    }
+
+    private fun obtainFragment(fragmentId: Int, position: Int): Fragment {
+        fragmentMap[fragmentId]?.let { return it }
+        supportFragmentManager.findFragmentByTag(fragmentTag(fragmentId))?.let {
+            fragmentMap[fragmentId] = it
+            return it
+        }
+        return when (fragmentId) {
+            idBookshelf1 -> BookshelfFragment1(position)
+            idBookshelf2 -> BookshelfFragment2(position)
+            idExplore -> ExploreFragment(position)
+            idRss -> RssFragment(position)
+            else -> MyFragment(position)
         }
     }
 
-    /**
-     * 用户隐私与协议
-     */
+    private fun fragmentTag(fragmentId: Int): String {
+        return "$MAIN_FRAGMENT_TAG_PREFIX$fragmentId"
+    }
+
     private suspend fun privacyPolicy(): Boolean = suspendCancellableCoroutine sc@{ block ->
         if (LocalConfig.privacyPolicyOk) {
             block.resume(true)
@@ -215,9 +321,6 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
     }
 
-    /**
-     * 版本更新日志
-     */
     private suspend fun upVersion() = suspendCancellableCoroutine sc@{ block ->
         if (LocalConfig.versionCode == appInfo.versionCode) {
             block.resume(null)
@@ -243,9 +346,6 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
     }
 
-    /**
-     * 设置本地密码
-     */
     private suspend fun setLocalPassword() = suspendCancellableCoroutine sc@{ block ->
         if (LocalConfig.password != null) {
             block.resume(null)
@@ -283,9 +383,6 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
     }
 
-    /**
-     * 备份同步
-     */
     private fun backupSync() {
         if (!AppConfig.autoCheckNewBackup) {
             return
@@ -322,145 +419,27 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
     }
 
-    /**
-     * 如果重启太快fragment不会重建,这里更新一下书架的排序
-     */
     override fun recreate() {
-        (fragmentMap[getFragmentId(0)] as? BaseBookshelfFragment)?.run {
-            upSort()
-        }
+        (fragmentMap[currentBookshelfFragmentId()] as? BaseBookshelfFragment)?.upSort()
         super.recreate()
     }
 
     override fun observeLiveBus() {
         viewModel.onUpBooksLiveData.observe(this) {
-            if (onUpBooksBadgeView == null) {
-                onUpBooksBadgeView = binding.bottomNavigationView.addBadgeView(0)
-            }
-            onUpBooksBadgeView!!.setBadgeCount(it)
+            upBooksBadgeCount = if (AppConfig.showWaitUpCount && it > 0) it else 0
         }
         observeEvent<String>(EventBus.RECREATE) {
             recreate()
         }
         observeEvent<Boolean>(EventBus.NOTIFY_MAIN) {
-            binding.apply {
-                if (it) {
-                    bottomNavigationView.menu.clear()
-                    bottomNavigationView.inflateMenu(R.menu.main_bnv)
-                    onUpBooksBadgeView = null
-                }
-                upBottomMenu()
-                if (it) {
-                    viewPagerMain.setCurrentItem(bottomMenuCount - 1, false)
-                }
-            }
+            refreshNavigationItems(selectLast = it)
         }
         observeEvent<String>(PreferKey.threadCount) {
             viewModel.upPool()
         }
     }
 
-    private fun upBottomMenu() {
-        val showDiscovery = AppConfig.showDiscovery
-        val showRss = AppConfig.showRSS
-        binding.bottomNavigationView.menu.let { menu ->
-            menu.findItem(R.id.menu_discovery).isVisible = showDiscovery
-            menu.findItem(R.id.menu_rss).isVisible = showRss
-        }
-        var index = 0
-        if (showDiscovery) {
-            index++
-            realPositions[index] = idExplore
-        }
-        if (showRss) {
-            index++
-            realPositions[index] = idRss
-        }
-        index++
-        realPositions[index] = idMy
-        bottomMenuCount = index + 1
-        adapter.notifyDataSetChanged()
+    companion object {
+        private const val MAIN_FRAGMENT_TAG_PREFIX = "main_fragment_"
     }
-
-    private fun upHomePage() {
-        when (AppConfig.defaultHomePage) {
-            "bookshelf" -> {}
-            "explore" -> if (AppConfig.showDiscovery) {
-                binding.viewPagerMain.setCurrentItem(realPositions.indexOf(idExplore), false)
-            }
-
-            "rss" -> if (AppConfig.showRSS) {
-                binding.viewPagerMain.setCurrentItem(realPositions.indexOf(idRss), false)
-            }
-
-            "my" -> binding.viewPagerMain.setCurrentItem(realPositions.indexOf(idMy), false)
-        }
-    }
-
-    private fun getFragmentId(position: Int): Int {
-        val id = realPositions[position]
-        if (id == idBookshelf) {
-            return if (AppConfig.bookGroupStyle == 1) idBookshelf2 else idBookshelf1
-        }
-        return id
-    }
-
-    private inner class PageChangeCallback : ViewPager.SimpleOnPageChangeListener() {
-
-        override fun onPageSelected(position: Int) {
-            pagePosition = position
-            binding.bottomNavigationView.menu[realPositions[position]].isChecked = true
-        }
-
-    }
-
-    @Suppress("DEPRECATION")
-    private inner class TabFragmentPageAdapter(fm: FragmentManager) :
-        FragmentStatePagerAdapter(fm, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT) {
-
-        private fun getId(position: Int): Int {
-            return getFragmentId(position)
-        }
-
-        override fun getItemPosition(any: Any): Int {
-            val position = (any as MainFragmentInterface).position
-                ?: return POSITION_NONE
-            val fragmentId = getId(position)
-            if ((fragmentId == idBookshelf1 && any is BookshelfFragment1)
-                || (fragmentId == idBookshelf2 && any is BookshelfFragment2)
-                || (fragmentId == idExplore && any is ExploreFragment)
-                || (fragmentId == idRss && any is RssFragment)
-                || (fragmentId == idMy && any is MyFragment)
-            ) {
-                return POSITION_UNCHANGED
-            }
-            return POSITION_NONE
-        }
-
-        override fun getItem(position: Int): Fragment {
-            return when (getId(position)) {
-                idBookshelf1 -> BookshelfFragment1(position)
-                idBookshelf2 -> BookshelfFragment2(position)
-                idExplore -> ExploreFragment(position)
-                idRss -> RssFragment(position)
-                else -> MyFragment(position)
-            }
-        }
-
-        override fun getCount(): Int {
-            return bottomMenuCount
-        }
-
-        override fun instantiateItem(container: ViewGroup, position: Int): Any {
-            var fragment = super.instantiateItem(container, position) as Fragment
-            if (fragment.isCreated && getItemPosition(fragment) == POSITION_NONE) {
-                destroyItem(container, position, fragment)
-                fragment = super.instantiateItem(container, position) as Fragment
-            }
-            fragmentMap[getId(position)] = fragment
-            return fragment
-        }
-
-    }
-
 }
