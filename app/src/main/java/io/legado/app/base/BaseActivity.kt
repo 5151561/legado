@@ -15,18 +15,16 @@ import android.widget.FrameLayout
 import androidx.activity.addCallback
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.ui.graphics.toArgb
 import androidx.viewbinding.ViewBinding
 import io.legado.app.R
 import io.legado.app.constant.AppConst
 import io.legado.app.constant.AppLog
 import io.legado.app.constant.Theme
-import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.ThemeConfig
-import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.backgroundColor
-import io.legado.app.lib.theme.primaryColor
+import io.legado.app.ui.theme.ThemeResolver
 import io.legado.app.ui.widget.TitleBar
-import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.applyBackgroundTint
 import io.legado.app.utils.applyOpenTint
 import io.legado.app.utils.applyTint
@@ -136,6 +134,7 @@ abstract class BaseActivity<VB : ViewBinding>(
     open fun onCompatOptionsItemSelected(item: MenuItem) = super.onOptionsItemSelected(item)
 
     open fun initTheme() {
+        val themeState = ThemeResolver.resolve(this)
         when (theme) {
             Theme.Transparent -> setTheme(R.style.AppTheme_Transparent)
             Theme.Dark -> {
@@ -149,12 +148,12 @@ abstract class BaseActivity<VB : ViewBinding>(
             }
 
             else -> {
-                if (ColorUtils.isColorLight(primaryColor)) {
-                    setTheme(R.style.AppTheme_Light)
-                } else {
+                if (themeState.isDark) {
                     setTheme(R.style.AppTheme_Dark)
+                } else {
+                    setTheme(R.style.AppTheme_Light)
                 }
-                window.decorView.applyBackgroundTint(backgroundColor)
+                window.decorView.applyBackgroundTint(themeState.background.toArgb())
             }
         }
     }
@@ -174,12 +173,11 @@ abstract class BaseActivity<VB : ViewBinding>(
     }
 
     open fun setupSystemBar() {
+        val themeState = ThemeResolver.resolve(this)
         if (fullScreen && !isInMultiWindow) {
             fullScreen()
         }
-        val isTransparentStatusBar = AppConfig.isTransparentStatusBar
-        val statusBarColor = ThemeStore.statusBarColor(this, isTransparentStatusBar)
-        setStatusBarColorAuto(statusBarColor, isTransparentStatusBar, fullScreen)
+        setStatusBarColorAuto(themeState.statusBar.toArgb(), themeState.isTransparent, fullScreen)
         if (toolBarTheme == Theme.Dark) {
             setLightStatusBar(false)
         } else if (toolBarTheme == Theme.Light) {
@@ -189,12 +187,7 @@ abstract class BaseActivity<VB : ViewBinding>(
     }
 
     open fun upNavigationBarColor() {
-        if (AppConfig.immNavigationBar) {
-            setNavigationBarColorAuto(ThemeStore.navigationBarColor(this))
-        } else {
-            val nbColor = ColorUtils.darkenColor(ThemeStore.navigationBarColor(this))
-            setNavigationBarColorAuto(nbColor)
-        }
+        setNavigationBarColorAuto(ThemeResolver.resolve(this).navigationBar.toArgb())
     }
 
     open fun observeLiveBus() {

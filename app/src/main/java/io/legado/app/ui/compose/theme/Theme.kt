@@ -8,10 +8,8 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
-import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.ui.theme.LegadoThemeState
 import io.legado.app.ui.theme.ThemeResolver
-import io.legado.app.utils.ColorUtils
 
 @Immutable
 data class LegadoExtendedColors(
@@ -32,22 +30,19 @@ val LocalLegadoExtendedColors = staticCompositionLocalOf {
 @Composable
 fun rememberThemeState(): LegadoThemeState {
     val context = LocalContext.current
-    return remember(ThemeStore.isConfigured(context)) {
-        ThemeResolver.resolve(context)
-    }
+    val input = ThemeResolver.snapshot(context)
+    return remember(input) { ThemeResolver.resolve(input) }
 }
 
 @Composable
 fun LegadoComposeTheme(
     content: @Composable () -> Unit
 ) {
-    val context = LocalContext.current
-    // 为了兼容性，暂时保留原始逻辑，后续逐步通过 rememberThemeState 替换
-    val darkTheme = !ColorUtils.isColorLight(ThemeStore.backgroundColor(context))
-    val colorScheme = legadoColorScheme(darkTheme)
+    val themeState = rememberThemeState()
+    val colorScheme = legadoColorScheme(themeState)
     val extendedColors = LegadoExtendedColors(
-        success = successColor(darkTheme),
-        warning = warningColor(darkTheme)
+        success = themeState.success,
+        warning = themeState.warning
     )
 
     androidx.compose.runtime.CompositionLocalProvider(
@@ -67,10 +62,12 @@ fun LegadoPreviewTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = legadoColorScheme(darkTheme)
+    val context = LocalContext.current
+    val previewState = ThemeResolver.resolve(ThemeResolver.snapshot(context).copy(isDark = darkTheme))
+    val colorScheme = legadoColorScheme(previewState)
     val extendedColors = LegadoExtendedColors(
-        success = successColor(darkTheme),
-        warning = warningColor(darkTheme)
+        success = previewState.success,
+        warning = previewState.warning
     )
 
     androidx.compose.runtime.CompositionLocalProvider(

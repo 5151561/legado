@@ -79,6 +79,7 @@ object PreferKey {
     const val barElevation = "barElevation"
     const val transparentStatusBar = "transparentStatusBar"
     const val immNavigationBar = "immNavigationBar"
+    const val pureBlack = "pureBlack"
     const val defaultCover = "defaultCover"
     const val defaultCoverDark = "defaultCoverDark"
     const val replaceEnableDefault = "replaceEnableDefault"

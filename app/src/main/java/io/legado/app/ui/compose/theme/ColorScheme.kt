@@ -4,7 +4,11 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import io.legado.app.ui.theme.LegadoThemeState
+import io.legado.app.utils.ColorUtils
 
+// Fallback palette used for previews or as a safe default.
 private val MorandiLightPrimary = Color(0xFF6750A4)
 private val MorandiLightOnPrimary = Color(0xFFFFFFFF)
 private val MorandiLightPrimaryContainer = Color(0xFFEADDFF)
@@ -59,7 +63,7 @@ private val MorandiDarkOnErrorContainer = Color(0xFFFFDAD6)
 private val MorandiDarkSuccess = Color(0xFF84D4A2)
 private val MorandiDarkWarning = Color(0xFFFFB95C)
 
-internal fun legadoColorScheme(darkTheme: Boolean): ColorScheme {
+private fun fallbackColorScheme(darkTheme: Boolean): ColorScheme {
     return if (darkTheme) {
         darkColorScheme(
             primary = MorandiDarkPrimary,
@@ -124,6 +128,105 @@ internal fun legadoColorScheme(darkTheme: Boolean): ColorScheme {
             errorContainer = MorandiLightErrorContainer,
             onErrorContainer = MorandiLightOnErrorContainer
         )
+    }
+}
+
+private fun onColorFor(@androidx.annotation.ColorInt color: Int): Color {
+    return if (ColorUtils.isColorLight(color)) Color(0xFF000000) else Color(0xFFFFFFFF)
+}
+
+internal fun legadoColorScheme(state: LegadoThemeState): ColorScheme {
+    val darkTheme = state.isDark
+    return kotlin.runCatching {
+        val primaryInt = state.primary.toArgb()
+        val primaryContainerInt = state.primaryContainer.toArgb()
+        val secondaryInt = state.secondary.toArgb()
+        val secondaryContainerInt = state.secondaryContainer.toArgb()
+        val tertiaryInt = state.tertiary.toArgb()
+        val tertiaryContainerInt = state.tertiaryContainer.toArgb()
+        val backgroundInt = state.background.toArgb()
+        val surfaceInt = state.surface.toArgb()
+        val surfaceVariantInt = state.surfaceContainer.toArgb()
+        val onSurfaceInt = state.onSurface.toArgb()
+        val onSurfaceVariantInt = state.onSurfaceVariant.toArgb()
+        val outlineInt = state.outline.toArgb()
+
+        val onBackground = Color(onSurfaceInt)
+        val onPrimary = onColorFor(primaryInt)
+        val onSecondary = onColorFor(secondaryInt)
+        val onTertiary = onColorFor(tertiaryInt)
+        val outlineVariantInt = ColorUtils.blendColors(onSurfaceVariantInt, backgroundInt, 0.85f)
+
+        val lightScrim = Color(0x66000000)
+        val darkScrim = Color(0x99000000)
+
+        if (darkTheme) {
+            darkColorScheme(
+                primary = Color(primaryInt),
+                onPrimary = onPrimary,
+                primaryContainer = Color(primaryContainerInt),
+                onPrimaryContainer = onColorFor(primaryContainerInt),
+                secondary = Color(secondaryInt),
+                onSecondary = onSecondary,
+                secondaryContainer = Color(secondaryContainerInt),
+                onSecondaryContainer = onColorFor(secondaryContainerInt),
+                tertiary = Color(tertiaryInt),
+                onTertiary = onTertiary,
+                tertiaryContainer = Color(tertiaryContainerInt),
+                onTertiaryContainer = onColorFor(tertiaryContainerInt),
+                background = Color(backgroundInt),
+                onBackground = onBackground,
+                surface = Color(surfaceInt),
+                onSurface = Color(onSurfaceInt),
+                surfaceVariant = Color(surfaceVariantInt),
+                onSurfaceVariant = Color(onSurfaceVariantInt),
+                surfaceTint = Color(primaryInt),
+                inverseSurface = ColorUtils.blendColors(backgroundInt, 0xFFFFFFFF.toInt(), 0.92f).let { Color(it) },
+                inverseOnSurface = Color(0xFF1D1B1E),
+                inversePrimary = ColorUtils.blendColors(primaryInt, 0xFFFFFFFF.toInt(), 0.65f).let { Color(it) },
+                outline = Color(outlineInt),
+                outlineVariant = Color(outlineVariantInt),
+                scrim = darkScrim,
+                error = MorandiDarkError,
+                onError = MorandiDarkOnError,
+                errorContainer = MorandiDarkErrorContainer,
+                onErrorContainer = MorandiDarkOnErrorContainer
+            )
+        } else {
+            lightColorScheme(
+                primary = Color(primaryInt),
+                onPrimary = onPrimary,
+                primaryContainer = Color(primaryContainerInt),
+                onPrimaryContainer = onColorFor(primaryContainerInt),
+                secondary = Color(secondaryInt),
+                onSecondary = onSecondary,
+                secondaryContainer = Color(secondaryContainerInt),
+                onSecondaryContainer = onColorFor(secondaryContainerInt),
+                tertiary = Color(tertiaryInt),
+                onTertiary = onTertiary,
+                tertiaryContainer = Color(tertiaryContainerInt),
+                onTertiaryContainer = onColorFor(tertiaryContainerInt),
+                background = Color(backgroundInt),
+                onBackground = onBackground,
+                surface = Color(surfaceInt),
+                onSurface = Color(onSurfaceInt),
+                surfaceVariant = Color(surfaceVariantInt),
+                onSurfaceVariant = Color(onSurfaceVariantInt),
+                surfaceTint = Color(primaryInt),
+                inverseSurface = Color(0xFF141218),
+                inverseOnSurface = Color(0xFFE6E0E9),
+                inversePrimary = ColorUtils.blendColors(primaryInt, 0xFF000000.toInt(), 0.35f).let { Color(it) },
+                outline = Color(outlineInt),
+                outlineVariant = Color(outlineVariantInt),
+                scrim = lightScrim,
+                error = MorandiLightError,
+                onError = MorandiLightOnError,
+                errorContainer = MorandiLightErrorContainer,
+                onErrorContainer = MorandiLightOnErrorContainer
+            )
+        }
+    }.getOrElse {
+        fallbackColorScheme(darkTheme)
     }
 }
 

@@ -6,10 +6,12 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
 import androidx.annotation.ColorInt
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import io.legado.app.R
 import io.legado.app.help.config.AppConfig
+import io.legado.app.ui.theme.ThemeResolver
 import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.dpToPx
 
@@ -59,25 +61,25 @@ fun Context.getSecondaryDisabledTextColor(dark: Boolean): Int {
 }
 
 val Context.primaryColor: Int
-    get() = ThemeStore.primaryColor(this)
+    get() = ThemeResolver.resolve(this).primary.toArgb()
 
 val Context.primaryColorDark: Int
-    get() = ThemeStore.primaryColorDark(this)
+    get() = ThemeResolver.resolve(this).statusBar.toArgb()
 
 val Context.accentColor: Int
-    get() = ThemeStore.accentColor(this)
+    get() = ThemeResolver.resolve(this).accentCompat.toArgb()
 
 val Context.backgroundColor: Int
-    get() = ThemeStore.backgroundColor(this)
+    get() = ThemeResolver.resolve(this).background.toArgb()
 
 val Context.bottomBackground: Int
-    get() = ThemeStore.bottomBackground(this)
+    get() = ThemeResolver.resolve(this).surfaceContainer.toArgb()
 
 val Context.primaryTextColor: Int
-    get() = getPrimaryTextColor(isDarkTheme)
+    get() = ThemeResolver.resolve(this).textPrimaryCompat.toArgb()
 
 val Context.secondaryTextColor: Int
-    get() = getSecondaryTextColor(isDarkTheme)
+    get() = ThemeResolver.resolve(this).textSecondaryCompat.toArgb()
 
 val Context.primaryDisabledTextColor: Int
     get() = getPrimaryDisabledTextColor(isDarkTheme)
@@ -86,25 +88,25 @@ val Context.secondaryDisabledTextColor: Int
     get() = getSecondaryDisabledTextColor(isDarkTheme)
 
 val Fragment.primaryColor: Int
-    get() = ThemeStore.primaryColor(requireContext())
+    get() = requireContext().primaryColor
 
 val Fragment.primaryColorDark: Int
-    get() = ThemeStore.primaryColorDark(requireContext())
+    get() = requireContext().primaryColorDark
 
 val Fragment.accentColor: Int
-    get() = ThemeStore.accentColor(requireContext())
+    get() = requireContext().accentColor
 
 val Fragment.backgroundColor: Int
-    get() = ThemeStore.backgroundColor(requireContext())
+    get() = requireContext().backgroundColor
 
 val Fragment.bottomBackground: Int
-    get() = ThemeStore.bottomBackground(requireContext())
+    get() = requireContext().bottomBackground
 
 val Fragment.primaryTextColor: Int
-    get() = requireContext().getPrimaryTextColor(isDarkTheme)
+    get() = requireContext().primaryTextColor
 
 val Fragment.secondaryTextColor: Int
-    get() = requireContext().getSecondaryTextColor(isDarkTheme)
+    get() = requireContext().secondaryTextColor
 
 val Fragment.primaryDisabledTextColor: Int
     get() = requireContext().getPrimaryDisabledTextColor(isDarkTheme)
@@ -120,7 +122,7 @@ val Context.buttonDisabledColor: Int
     }
 
 val Context.isDarkTheme: Boolean
-    get() = ColorUtils.isColorLight(ThemeStore.primaryColor(this))
+    get() = ThemeResolver.resolve(this).isDark
 
 val Fragment.isDarkTheme: Boolean
     get() = requireContext().isDarkTheme
