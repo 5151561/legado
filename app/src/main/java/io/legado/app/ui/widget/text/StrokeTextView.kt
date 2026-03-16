@@ -5,6 +5,7 @@ import android.util.AttributeSet
 import androidx.appcompat.widget.AppCompatTextView
 import io.legado.app.R
 import io.legado.app.lib.theme.*
+import io.legado.app.ui.theme.legadoComponentTokens
 import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.dpToPx
 import io.legado.app.utils.getCompatColor
@@ -68,18 +69,19 @@ open class StrokeTextView(context: Context, attrs: AttributeSet?) :
                 )
             }
             else -> {
+                val tokens = context.legadoComponentTokens().input
                 background = Selector.shapeBuild()
                     .setCornerRadius(radius)
                     .setStrokeWidth(1.dpToPx())
                     .setDisabledStrokeColor(context.getCompatColor(R.color.md_grey_500))
                     .setDefaultStrokeColor(ThemeStore.textColorSecondary(context))
-                    .setSelectedStrokeColor(ThemeStore.accentColor(context))
+                    .setSelectedStrokeColor(tokens.focus)
                     .setPressedBgColor(context.getCompatColor(R.color.transparent30))
                     .create()
                 setTextColor(
                     Selector.colorBuild()
                         .setDefaultColor(ThemeStore.textColorSecondary(context))
-                        .setSelectedColor(ThemeStore.accentColor(context))
+                        .setSelectedColor(tokens.focus)
                         .setDisabledColor(context.getCompatColor(R.color.md_grey_500))
                         .create()
                 )

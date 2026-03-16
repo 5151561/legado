@@ -32,6 +32,7 @@ import io.legado.app.ui.book.changesource.ChangeBookSourceDialog
 import io.legado.app.ui.book.source.edit.BookSourceEditActivity
 import io.legado.app.ui.book.toc.TocActivityResult
 import io.legado.app.ui.login.SourceLoginActivity
+import io.legado.app.ui.theme.applyLegadoFabStyle
 import io.legado.app.ui.widget.seekbar.SeekBarChangeListener
 import io.legado.app.utils.StartActivityContract
 import io.legado.app.utils.applyNavigationBarPadding
@@ -134,6 +135,7 @@ class AudioPlayActivity :
     }
 
     private fun initView() {
+        binding.fabPlayStop.applyLegadoFabStyle()
         binding.ivPlayMode.setOnClickListener {
             AudioPlay.changePlayMode()
         }

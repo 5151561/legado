@@ -21,8 +21,8 @@ import io.legado.app.data.entities.BookSourcePart
 import io.legado.app.databinding.DialogSourcePickerBinding
 import io.legado.app.databinding.Item1lineTextBinding
 import io.legado.app.help.config.AppConfig
-import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
+import io.legado.app.ui.theme.applyLegadoTopAppBarStyle
 import io.legado.app.ui.widget.number.NumberPickerDialog
 import io.legado.app.utils.applyTint
 import io.legado.app.utils.dpToPx
@@ -65,7 +65,7 @@ class SourcePickerDialog : BaseDialogFragment(R.layout.dialog_source_picker),
     }
 
     private fun initView() {
-        binding.toolBar.setBackgroundColor(primaryColor)
+        binding.toolBar.applyLegadoTopAppBarStyle()
         binding.toolBar.title = "选择书源"
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerView.adapter = adapter

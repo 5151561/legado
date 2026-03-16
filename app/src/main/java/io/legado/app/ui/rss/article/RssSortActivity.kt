@@ -14,9 +14,9 @@ import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
 import io.legado.app.databinding.ActivityRssArtivlesBinding
 import io.legado.app.help.source.sortUrls
-import io.legado.app.lib.theme.accentColor
 import io.legado.app.ui.login.SourceLoginActivity
 import io.legado.app.ui.rss.source.edit.RssSourceEditActivity
+import io.legado.app.ui.theme.applyLegadoTabsStyle
 import io.legado.app.ui.widget.dialog.VariableDialog
 import io.legado.app.utils.*
 import io.legado.app.utils.viewbindingdelegate.viewBinding
@@ -45,7 +45,7 @@ class RssSortActivity : VMBaseActivity<ActivityRssArtivlesBinding, RssSortViewMo
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         binding.viewPager.adapter = adapter
         binding.tabLayout.setupWithViewPager(binding.viewPager)
-        binding.tabLayout.setSelectedTabIndicatorColor(accentColor)
+        binding.tabLayout.applyLegadoTabsStyle()
         viewModel.titleLiveData.observe(this) {
             binding.titleBar.title = it
         }

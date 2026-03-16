@@ -3,7 +3,7 @@ package io.legado.app.lib.theme.view
 import android.content.Context
 import android.util.AttributeSet
 import androidx.appcompat.widget.AppCompatSeekBar
-import io.legado.app.lib.theme.accentColor
+import io.legado.app.ui.theme.legadoComponentTokens
 import io.legado.app.utils.applyTint
 
 /**
@@ -13,7 +13,7 @@ class ThemeSeekBar(context: Context, attrs: AttributeSet) : AppCompatSeekBar(con
 
     init {
         if (!isInEditMode) {
-            applyTint(context.accentColor)
+            applyTint(context.legadoComponentTokens().input.focus)
         }
     }
 }

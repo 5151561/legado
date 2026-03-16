@@ -9,7 +9,7 @@ import android.view.animation.LinearInterpolator
 import android.widget.Checkable
 import androidx.core.view.postDelayed
 import io.legado.app.R
-import io.legado.app.lib.theme.ThemeStore
+import io.legado.app.ui.theme.legadoComponentTokens
 import io.legado.app.utils.dpToPx
 import io.legado.app.utils.getCompatColor
 import kotlin.math.min
@@ -45,7 +45,7 @@ class SmoothCheckBox @JvmOverloads constructor(
 
     init {
         val ta = context.obtainStyledAttributes(attrs, R.styleable.SmoothCheckBox)
-        var tickColor = ThemeStore.accentColor(context)
+        var tickColor = context.legadoComponentTokens().input.focus
         mCheckedColor = context.getCompatColor(R.color.background_menu)
         mUnCheckedColor = context.getCompatColor(R.color.background_menu)
         mFloorColor = context.getCompatColor(R.color.transparent30)

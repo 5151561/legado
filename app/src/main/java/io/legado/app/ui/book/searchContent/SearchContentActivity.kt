@@ -24,6 +24,7 @@ import io.legado.app.help.book.isLocal
 import io.legado.app.lib.theme.bottomBackground
 import io.legado.app.lib.theme.getPrimaryTextColor
 import io.legado.app.lib.theme.primaryTextColor
+import io.legado.app.ui.theme.applyLegadoFabStyle
 import io.legado.app.ui.widget.recycler.UpLinearLayoutManager
 import io.legado.app.ui.widget.recycler.VerticalDivider
 import io.legado.app.utils.ColorUtils
@@ -131,6 +132,7 @@ class SearchContentActivity :
     }
 
     private fun initView() {
+        binding.fbStop.applyLegadoFabStyle()
         binding.ivSearchContentTop.setOnClickListener {
             mLayoutManager.scrollToPositionWithOffset(0, 0)
         }

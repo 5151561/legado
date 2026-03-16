@@ -11,6 +11,7 @@ import io.legado.app.R
 import io.legado.app.ui.book.read.page.PageView
 import io.legado.app.ui.book.read.page.ReadView
 import io.legado.app.ui.book.read.page.entities.PageDirection
+import io.legado.app.utils.makeLegadoSnackbar
 import kotlin.math.abs
 
 abstract class PageDelegate(protected val readView: ReadView) {
@@ -41,7 +42,7 @@ abstract class PageDelegate(protected val readView: ReadView) {
     }
 
     private val snackBar: Snackbar by lazy {
-        Snackbar.make(readView, "", Snackbar.LENGTH_SHORT)
+        readView.makeLegadoSnackbar("", Snackbar.LENGTH_SHORT)
     }
 
     var isMoved = false

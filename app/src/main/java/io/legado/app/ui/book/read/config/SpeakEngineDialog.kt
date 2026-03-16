@@ -30,6 +30,7 @@ import io.legado.app.model.ReadBook
 import io.legado.app.ui.association.ImportHttpTtsDialog
 import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.login.SourceLoginActivity
+import io.legado.app.ui.theme.applyLegadoTopAppBarStyle
 import io.legado.app.utils.ACache
 import io.legado.app.utils.GSON
 import io.legado.app.utils.applyTint
@@ -99,7 +100,7 @@ class SpeakEngineDialog() : BaseDialogFragment(R.layout.dialog_recycler_view),
     }
 
     private fun initView() = binding.run {
-        toolBar.setBackgroundColor(primaryColor)
+        toolBar.applyLegadoTopAppBarStyle()
         toolBar.setTitle(R.string.speak_engine)
         recyclerView.setEdgeEffectColor(primaryColor)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())

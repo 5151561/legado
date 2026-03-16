@@ -6,13 +6,14 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.view.forEach
 import androidx.fragment.app.DialogFragment
 import io.legado.app.lib.theme.Selector
-import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.filletBackground
+import io.legado.app.ui.theme.legadoComponentTokens
 import splitties.systemservices.windowManager
 
 fun AlertDialog.applyTint(): AlertDialog {
     window?.setBackgroundDrawable(context.filletBackground)
-    val accentColor = context.accentColor
+    val tokens = context.legadoComponentTokens()
+    val accentColor = tokens.dialog.action
     val colorStateList = Selector.colorBuild()
         .setDefaultColor(accentColor)
         .setPressedColor(ColorUtils.darkenColor(accentColor))
@@ -28,7 +29,7 @@ fun AlertDialog.applyTint(): AlertDialog {
     }
     window?.decorView?.post {
         listView?.forEach {
-            it.applyTint(context.accentColor)
+            it.applyTint(tokens.input.focus)
         }
     }
     return this

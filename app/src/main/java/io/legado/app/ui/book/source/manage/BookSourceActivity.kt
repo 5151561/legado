@@ -37,6 +37,7 @@ import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.login.SourceLoginActivity
 import io.legado.app.ui.qrcode.QrCodeResult
 import io.legado.app.utils.ACache
+import io.legado.app.utils.makeLegadoSnackbar
 import io.legado.app.utils.NetworkUtils
 import io.legado.app.utils.cnCompare
 import io.legado.app.utils.dpToPx
@@ -514,8 +515,8 @@ class BookSourceActivity : VMBaseActivity<ActivityBookSourceBinding, BookSourceV
     override fun observeLiveBus() {
         observeEvent<String>(EventBus.CHECK_SOURCE) { msg ->
             snackBar?.setText(msg) ?: run {
-                snackBar = Snackbar
-                    .make(binding.root, msg, Snackbar.LENGTH_INDEFINITE)
+                snackBar = binding.root
+                    .makeLegadoSnackbar(msg, Snackbar.LENGTH_INDEFINITE)
                     .setAction(R.string.cancel) {
                         CheckSource.stop(this)
                         Debug.finishChecking()

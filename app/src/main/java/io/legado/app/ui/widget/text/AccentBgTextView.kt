@@ -6,7 +6,7 @@ import android.util.AttributeSet
 import androidx.appcompat.widget.AppCompatTextView
 import io.legado.app.R
 import io.legado.app.lib.theme.Selector
-import io.legado.app.lib.theme.ThemeStore
+import io.legado.app.ui.theme.legadoComponentTokens
 import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.dpToPx
 import io.legado.app.utils.getCompatColor
@@ -34,7 +34,7 @@ class AccentBgTextView @JvmOverloads constructor(
         val accentColor = if (isInEditMode) {
             context.getCompatColor(R.color.accent)
         } else {
-            ThemeStore.accentColor(context)
+            context.legadoComponentTokens().input.focus
         }
         background = Selector.shapeBuild()
             .setCornerRadius(radius)

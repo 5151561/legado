@@ -25,10 +25,10 @@ import io.legado.app.databinding.DialogTocRegexBinding
 import io.legado.app.databinding.ItemTocRegexBinding
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.backgroundColor
-import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.association.ImportTxtTocRuleDialog
 import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.qrcode.QrCodeResult
+import io.legado.app.ui.theme.applyLegadoTopAppBarStyle
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.ui.widget.recycler.VerticalDivider
 import io.legado.app.utils.ACache
@@ -81,7 +81,7 @@ class TxtTocRuleDialog() : BaseDialogFragment(R.layout.dialog_toc_regex),
     }
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
-        binding.toolBar.setBackgroundColor(primaryColor)
+        binding.toolBar.applyLegadoTopAppBarStyle()
         durRegex = arguments?.getString("tocRegex")
         binding.toolBar.setTitle(R.string.txt_toc_rule)
         binding.toolBar.inflateMenu(R.menu.txt_toc_rule)

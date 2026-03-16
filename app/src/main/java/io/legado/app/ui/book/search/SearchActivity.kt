@@ -36,6 +36,7 @@ import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.ui.about.AppLogDialog
 import io.legado.app.ui.book.info.BookInfoActivity
 import io.legado.app.ui.book.source.manage.BookSourceActivity
+import io.legado.app.ui.theme.applyLegadoFabStyle
 import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.applyNavigationBarMargin
 import io.legado.app.utils.applyNavigationBarPadding
@@ -216,6 +217,7 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
     }
 
     private fun initRecyclerView() {
+        binding.fbStartStop.applyLegadoFabStyle()
         binding.recyclerView.setEdgeEffectColor(primaryColor)
         binding.rvBookshelfSearch.setEdgeEffectColor(primaryColor)
         binding.rvHistoryKey.setEdgeEffectColor(primaryColor)

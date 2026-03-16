@@ -7,8 +7,8 @@ import io.legado.app.R
 import io.legado.app.base.BaseDialogFragment
 import io.legado.app.constant.PreferKey
 import io.legado.app.databinding.DialogCheckSourceConfigBinding
-import io.legado.app.lib.theme.primaryColor
 import io.legado.app.model.CheckSource
+import io.legado.app.ui.theme.applyLegadoTopAppBarStyle
 import io.legado.app.utils.putPrefString
 import io.legado.app.utils.setLayout
 import io.legado.app.utils.toastOnUi
@@ -28,7 +28,7 @@ class CheckSourceConfig : BaseDialogFragment(R.layout.dialog_check_source_config
     }
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
-        binding.toolBar.setBackgroundColor(primaryColor)
+        binding.toolBar.applyLegadoTopAppBarStyle()
         binding.run {
             checkSearch.onClick {
                 if (!checkSearch.isChecked && !checkDiscovery.isChecked) {

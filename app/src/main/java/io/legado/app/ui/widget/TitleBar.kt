@@ -13,7 +13,6 @@ import android.widget.ImageView
 import androidx.annotation.ColorInt
 import androidx.annotation.StyleRes
 import androidx.appcompat.widget.Toolbar
-import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.alpha
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.children
@@ -21,7 +20,7 @@ import com.google.android.material.appbar.AppBarLayout
 import io.legado.app.R
 import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.elevation
-import io.legado.app.ui.theme.ThemeResolver
+import io.legado.app.ui.theme.applyLegadoTopAppBarStyle
 import io.legado.app.utils.activity
 import io.legado.app.utils.setOnApplyWindowInsetsListenerCompat
 import splitties.views.bottomPadding
@@ -181,7 +180,7 @@ class TitleBar @JvmOverloads constructor(
             if (AppConfig.isEInkMode) {
                 setBackgroundResource(R.drawable.bg_eink_border_bottom)
             } else {
-                setBackgroundColor(ThemeResolver.resolve(context).toolbar.toArgb())
+                applyLegadoTopAppBarStyle()
             }
 
             stateListAnimator = null
