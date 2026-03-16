@@ -1,7 +1,6 @@
 package io.legado.app.ui.main.my
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,9 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.rounded.HelpOutline
@@ -31,12 +28,12 @@ import androidx.compose.material.icons.rounded.CloudUpload
 import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.ColorLens
 import androidx.compose.material.icons.rounded.Folder
-import androidx.compose.material.icons.rounded.HelpOutline
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.Web
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +47,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.legado.app.ui.compose.theme.LegadoPageDefaults
+import io.legado.app.ui.compose.theme.LegadoSectionCard
+import io.legado.app.ui.compose.theme.LegadoSectionLabel
 
 data class MySettingItemUi(
     val key: String,
@@ -95,15 +95,19 @@ fun MyMaterialScreen(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        contentPadding = PaddingValues(
+            start = LegadoPageDefaults.HorizontalPadding,
+            end = LegadoPageDefaults.HorizontalPadding,
+            bottom = 32.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(LegadoPageDefaults.SectionSpacing)
     ) {
         item {
             Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 16.dp),
+                    .padding(vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -111,11 +115,11 @@ fun MyMaterialScreen(
                     Text(
                         text = "我的",
                         style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Normal
+                        fontWeight = FontWeight.SemiBold
                     )
                     Text(
                         text = "设置、同步和阅读偏好",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -135,21 +139,11 @@ fun MyMaterialScreen(
                 onWebServiceToggle(checked)
             }
         }) }
-        item { SectionTitle("设置") }
+        item { LegadoSectionLabel("设置") }
         item { SettingsSection(items = settingItems, onItemClick = onItemClick) }
-        item { SectionTitle("其它") }
+        item { LegadoSectionLabel("其它") }
         item { SettingsSection(items = otherItems, onItemClick = onItemClick) }
     }
-}
-
-@Composable
-private fun SectionTitle(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 20.dp, top = 24.dp, bottom = 8.dp)
-    )
 }
 
 @Composable
@@ -159,21 +153,27 @@ private fun SettingsSection(
     onItemLongClick: (String) -> Unit = {},
     onSwitchChange: (String, Boolean) -> Unit = { _, _ -> }
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items.forEach { item ->
-            SettingsItemCard(
+    LegadoSectionCard(contentPadding = PaddingValues(vertical = 4.dp)) {
+        items.forEachIndexed { index, item ->
+            SettingsItemRow(
                 item = item,
                 onClick = { onItemClick(item.key) },
                 onLongClick = { onItemLongClick(item.key) },
                 onSwitchChange = { onSwitchChange(item.key, it) }
             )
+            if (index != items.lastIndex) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(start = 88.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+                )
+            }
         }
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun SettingsItemCard(
+private fun SettingsItemRow(
     item: MySettingItemUi,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -190,78 +190,72 @@ private fun SettingsItemCard(
         MaterialTheme.colorScheme.primary
     }
 
-    Surface(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
-        shape = RoundedCornerShape(28.dp),
-        tonalElevation = 1.dp
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Surface(
+            shape = MaterialTheme.shapes.medium,
+            color = if (item.destructive) {
+                MaterialTheme.colorScheme.errorContainer
+            } else {
+                MaterialTheme.colorScheme.primaryContainer
+            },
+            modifier = Modifier.size(56.dp)
         ) {
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = if (item.destructive) {
-                    MaterialTheme.colorScheme.errorContainer
-                } else {
-                    MaterialTheme.colorScheme.primaryContainer
-                },
-                modifier = Modifier.size(56.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(item.icon, contentDescription = null, tint = iconTint)
-                }
+            Box(contentAlignment = Alignment.Center) {
+                Icon(item.icon, contentDescription = null, tint = iconTint)
             }
-            Spacer(modifier = Modifier.size(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
+        }
+        Spacer(modifier = Modifier.size(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = item.title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = contentColor
+            )
+            item.desc?.let {
                 Text(
-                    text = item.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = contentColor
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
-                item.desc?.let {
+            }
+        }
+        when {
+            item.switchChecked != null -> {
+                Switch(
+                    checked = item.switchChecked,
+                    onCheckedChange = onSwitchChange
+                )
+            }
+
+            !item.badge.isNullOrBlank() -> {
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = CircleShape
+                ) {
                     Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        text = item.badge,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 }
             }
-            when {
-                item.switchChecked != null -> {
-                    Switch(
-                        checked = item.switchChecked,
-                        onCheckedChange = onSwitchChange
-                    )
-                }
 
-                !item.badge.isNullOrBlank() -> {
-                    Surface(
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        shape = CircleShape
-                    ) {
-                        Text(
-                            text = item.badge,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-                }
-
-                else -> {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.ArrowForwardIos,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
-                    )
-                }
+            else -> {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowForwardIos,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+                )
             }
         }
     }

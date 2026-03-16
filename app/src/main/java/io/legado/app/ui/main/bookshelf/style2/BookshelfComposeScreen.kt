@@ -61,6 +61,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.ui.graphics.Color
 import io.legado.app.R
 import io.legado.app.data.entities.BookGroup
+import io.legado.app.ui.compose.theme.LegadoPageDefaults
 import io.legado.app.ui.compose.theme.LegadoTheme
 import io.legado.app.ui.widget.image.CoverImageView
 
@@ -172,8 +173,8 @@ private fun BookshelfList(
     LazyColumn(
         state = state,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        contentPadding = PaddingValues(LegadoPageDefaults.HorizontalPadding),
+        verticalArrangement = Arrangement.spacedBy(LegadoPageDefaults.SectionSpacing)
     ) {
         item {
             BookshelfActionRow(
@@ -222,9 +223,9 @@ private fun BookshelfGrid(
         columns = GridCells.Fixed(gridColumns.coerceAtLeast(2)),
         state = state,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        contentPadding = PaddingValues(LegadoPageDefaults.HorizontalPadding),
+        horizontalArrangement = Arrangement.spacedBy(LegadoPageDefaults.SectionSpacing),
+        verticalArrangement = Arrangement.spacedBy(LegadoPageDefaults.SectionSpacing)
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             BookshelfActionRow(
@@ -322,10 +323,10 @@ internal fun BookListCard(
             .fillMaxWidth()
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-        shape = RoundedCornerShape(18.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = MaterialTheme.shapes.medium
     ) {
         Row(
             modifier = Modifier
@@ -405,10 +406,10 @@ internal fun BookGridCard(
             .fillMaxWidth()
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(18.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = MaterialTheme.shapes.medium
     ) {
         Column(
             modifier = Modifier
@@ -463,8 +464,8 @@ private fun GroupCard(
             .size(width = 108.dp, height = 160.dp)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(20.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = MaterialTheme.shapes.medium
     ) {
         Column(
             modifier = Modifier
@@ -570,7 +571,7 @@ private fun BookCover(
     modifier: Modifier = Modifier
 ) {
     AndroidView(
-        modifier = modifier.clip(RoundedCornerShape(18.dp)),
+        modifier = modifier.clip(MaterialTheme.shapes.medium),
         factory = { context -> CoverImageView(context) },
         update = { view ->
             view.load(

@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -27,7 +26,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.Add
@@ -43,9 +41,6 @@ import androidx.compose.material.icons.outlined.Source
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material.icons.outlined.Widgets
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -59,7 +54,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -71,9 +65,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.legado.app.R
+import io.legado.app.ui.compose.theme.LegadoPageDefaults
+import io.legado.app.ui.compose.theme.LegadoTopBarSurface
 import io.legado.app.ui.main.bookshelf.style2.BookGridCard
 import io.legado.app.ui.main.bookshelf.style2.BookListCard
 import io.legado.app.ui.main.bookshelf.style2.BookshelfBookUi
@@ -175,9 +170,9 @@ fun BookshelfTabsComposeScreen(
                 state = gridState,
                 gridColumns = gridColumns,
                 contentPadding = PaddingValues(
-                    start = 20.dp,
-                    top = innerPadding.calculateTopPadding() + 20.dp,
-                    end = 20.dp,
+                    start = LegadoPageDefaults.HorizontalPadding,
+                    top = innerPadding.calculateTopPadding() + LegadoPageDefaults.SectionSpacing,
+                    end = LegadoPageDefaults.HorizontalPadding,
                     bottom = innerPadding.calculateBottomPadding() + 120.dp
                 ),
                 onRefresh = onRefresh,
@@ -198,9 +193,9 @@ fun BookshelfTabsComposeScreen(
                 onRefresh = onRefresh,
                 state = listState,
                 contentPadding = PaddingValues(
-                    start = 20.dp,
-                    top = innerPadding.calculateTopPadding() + 20.dp,
-                    end = 20.dp,
+                    start = LegadoPageDefaults.HorizontalPadding,
+                    top = innerPadding.calculateTopPadding() + LegadoPageDefaults.SectionSpacing,
+                    end = LegadoPageDefaults.HorizontalPadding,
                     bottom = innerPadding.calculateBottomPadding() + 120.dp
                 ),
                 onTabClick = onTabClick,
@@ -221,66 +216,67 @@ private fun BookshelfTopBar(
     onOverflowActionClick: (BookshelfOverflowAction) -> Unit
 ) {
     var showOverflowMenu by remember { mutableStateOf(false) }
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 3.dp,
-        shadowElevation = 4.dp
-    ) {
+    LegadoTopBarSurface {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
         ) {
-            CenterAlignedTopAppBar(
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                title = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = LegadoPageDefaults.HorizontalPadding,
+                        end = 8.dp,
+                        top = 8.dp,
+                        bottom = 8.dp
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "我的书架",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold
                     )
-                },
-                actions = {
-                    IconButton(onClick = onSearchClick) {
+                }
+                IconButton(onClick = onSearchClick) {
+                    Icon(
+                        imageVector = Icons.Outlined.Search,
+                        contentDescription = null
+                    )
+                }
+                Box {
+                    IconButton(onClick = { showOverflowMenu = true }) {
                         Icon(
-                            imageVector = Icons.Outlined.Search,
+                            imageVector = Icons.Outlined.MoreVert,
                             contentDescription = null
                         )
                     }
-                    Box {
-                        IconButton(onClick = { showOverflowMenu = true }) {
-                            Icon(
-                                imageVector = Icons.Outlined.MoreVert,
-                                contentDescription = null
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = showOverflowMenu,
-                            onDismissRequest = { showOverflowMenu = false }
-                        ) {
-                            BookshelfOverflowAction.entries.forEach { action ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(text = androidx.compose.ui.res.stringResource(action.labelRes))
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = overflowActionIcon(action),
-                                            contentDescription = null
-                                        )
-                                    },
-                                    onClick = {
-                                        showOverflowMenu = false
-                                        onOverflowActionClick(action)
-                                    }
+                }
+                DropdownMenu(
+                    expanded = showOverflowMenu,
+                    onDismissRequest = { showOverflowMenu = false }
+                ) {
+                    BookshelfOverflowAction.entries.forEach { action ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(text = androidx.compose.ui.res.stringResource(action.labelRes))
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = overflowActionIcon(action),
+                                    contentDescription = null
                                 )
+                            },
+                            onClick = {
+                                showOverflowMenu = false
+                                onOverflowActionClick(action)
                             }
-                        }
+                        )
                     }
                 }
-            )
+            }
             PrimaryTabRow(
                 selectedTabIndex = sourceFilter.ordinal,
                 containerColor = MaterialTheme.colorScheme.surface
@@ -473,39 +469,32 @@ private fun BookshelfOverviewCard(
     totalCount: Int,
     onRefresh: () -> Unit
 ) {
-    Card(
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = selectedGroup?.groupName ?: "全部书籍",
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
                 text = "当前展示 $visibleCount 本，书架共 $totalCount 本",
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            FilledTonalButton(onClick = onRefresh) {
-                Icon(
-                    imageVector = Icons.Outlined.Update,
-                    contentDescription = null
-                )
-                Text(
-                    text = "刷新书架",
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
+        }
+        FilledTonalButton(onClick = onRefresh) {
+            Icon(
+                imageVector = Icons.Outlined.Update,
+                contentDescription = null
+            )
+            Text(
+                text = "刷新书架",
+                modifier = Modifier.padding(start = 8.dp)
+            )
         }
     }
 }
@@ -530,7 +519,7 @@ private fun BookshelfGroupSelector(
                 val selected = index == selectedTabIndex
                 Surface(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(999.dp))
+                        .clip(MaterialTheme.shapes.extraLarge)
                         .combinedClickable(
                             onClick = { onTabClick(index) },
                             onLongClick = { onTabLongClick(group) }
@@ -541,7 +530,7 @@ private fun BookshelfGroupSelector(
                         MaterialTheme.colorScheme.surface
                     },
                     tonalElevation = if (selected) 2.dp else 0.dp,
-                    shadowElevation = if (selected) 1.dp else 0.dp
+                    shadowElevation = 0.dp
                 ) {
                     Text(
                         text = group.groupName,
@@ -562,33 +551,27 @@ private fun BookshelfGroupSelector(
 
 @Composable
 private fun BookshelfInlineEmptyState() {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 24.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            contentAlignment = Alignment.Center
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.AutoStories,
-                    contentDescription = null,
-                    modifier = Modifier.size(44.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "这个分组里还没有书",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Icon(
+                imageVector = Icons.Outlined.AutoStories,
+                contentDescription = null,
+                modifier = Modifier.size(44.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = "这个分组里还没有书",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
