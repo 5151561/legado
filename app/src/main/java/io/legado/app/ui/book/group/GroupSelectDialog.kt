@@ -19,9 +19,9 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.databinding.DialogBookGroupPickerBinding
 import io.legado.app.databinding.ItemGroupSelectBinding
-import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.ui.theme.applyLegadoTopAppBarStyle
+import io.legado.app.ui.theme.legadoComponentTokens
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.ui.widget.recycler.VerticalDivider
 import io.legado.app.utils.applyTint
@@ -78,7 +78,7 @@ class GroupSelectDialog() : BaseDialogFragment(R.layout.dialog_book_group_picker
         binding.tvCancel.setOnClickListener {
             dismissAllowingStateLoss()
         }
-        binding.tvOk.setTextColor(requireContext().accentColor)
+        binding.tvOk.setTextColor(requireContext().legadoComponentTokens().shared.accent)
         binding.tvOk.setOnClickListener {
             callBack?.upGroup(requestCode, groupId)
             dismissAllowingStateLoss()

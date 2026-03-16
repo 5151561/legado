@@ -7,9 +7,9 @@ import androidx.appcompat.widget.AppCompatRadioButton
 import androidx.appcompat.widget.TooltipCompat
 import io.legado.app.R
 import io.legado.app.lib.theme.Selector
-import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.bottomBackground
 import io.legado.app.lib.theme.getPrimaryTextColor
+import io.legado.app.ui.theme.legadoComponentTokens
 import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.dpToPx
 import io.legado.app.utils.getCompatColor
@@ -32,14 +32,11 @@ class ThemeRadioNoButton(context: Context, attrs: AttributeSet) :
         when {
             isInEditMode -> Unit
             isBottomBackground -> {
-                val accentColor = context.accentColor
+                val sharedTokens = context.legadoComponentTokens().shared
+                val accentColor = sharedTokens.accent
                 val isLight = ColorUtils.isColorLight(context.bottomBackground)
                 val textColor = context.getPrimaryTextColor(isLight)
-                val checkedTextColor = if (ColorUtils.isColorLight(accentColor)) {
-                    Color.BLACK
-                } else {
-                    Color.WHITE
-                }
+                val checkedTextColor = sharedTokens.onAccent
                 background = Selector.shapeBuild()
                     .setCornerRadius(2.dpToPx())
                     .setStrokeWidth(2.dpToPx())
@@ -55,13 +52,10 @@ class ThemeRadioNoButton(context: Context, attrs: AttributeSet) :
                 )
             }
             else -> {
-                val accentColor = context.accentColor
+                val sharedTokens = context.legadoComponentTokens().shared
+                val accentColor = sharedTokens.accent
                 val defaultTextColor = context.getCompatColor(R.color.primaryText)
-                val checkedTextColor = if (ColorUtils.isColorLight(accentColor)) {
-                    Color.BLACK
-                } else {
-                    Color.WHITE
-                }
+                val checkedTextColor = sharedTokens.onAccent
                 background = Selector.shapeBuild()
                     .setCornerRadius(2.dpToPx())
                     .setStrokeWidth(2.dpToPx())

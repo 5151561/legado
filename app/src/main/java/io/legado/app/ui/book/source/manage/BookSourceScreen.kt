@@ -49,18 +49,14 @@ import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.Explore
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -82,6 +78,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.legado.app.data.entities.BookSourcePart
+import io.legado.app.ui.compose.theme.LegadoBatchActionSheet
+import io.legado.app.ui.compose.theme.LegadoSelectionBottomBar
 import io.legado.app.ui.compose.theme.LegadoTheme
 
 enum class BookSourceTopAction {
@@ -174,15 +172,14 @@ fun BookSourceScreen(
             )
         },
         bottomBar = {
-            BottomActionBar(
-                selectedCount = selectedCount,
-                totalCount = sources.size,
-                isAllSelected = isAllSelected,
-                onSelectAll = onSelectAll,
-                onInvertSelection = onInvertSelection,
-                onDeleteSelected = onDeleteSelected,
-                onMoreClick = { showBottomSheet = true }
-            )
+                LegadoSelectionBottomBar(
+                    selectedCount = selectedCount,
+                    totalCount = sources.size,
+                    onSelectAll = onSelectAll,
+                    onInvertSelection = onInvertSelection,
+                    onDeleteSelection = onDeleteSelected,
+                    onMoreClick = { showBottomSheet = true }
+                )
         }
     ) { paddingValues ->
         Box(
@@ -225,7 +222,38 @@ fun BookSourceScreen(
         }
 
         if (showBottomSheet) {
-            BatchActionBottomSheet(
+            LegadoBatchActionSheet(
+                title = "批量操作",
+                actions = listOf(
+                    BookSourceBatchAction.EnableSelected to "启用所选",
+                    BookSourceBatchAction.DisableSelected to "禁用所选",
+                    BookSourceBatchAction.EnableExploreSelected to "启用发现",
+                    BookSourceBatchAction.DisableExploreSelected to "禁用发现",
+                    BookSourceBatchAction.AddGroup to "添加分组",
+                    BookSourceBatchAction.RemoveGroup to "移除分组",
+                    BookSourceBatchAction.TopSelected to "置顶所选",
+                    BookSourceBatchAction.BottomSelected to "置底所选",
+                    BookSourceBatchAction.CheckSelected to "校验所选",
+                    BookSourceBatchAction.CheckSelectedInterval to "补齐区间",
+                    BookSourceBatchAction.ExportSelected to "导出所选",
+                    BookSourceBatchAction.ShareSelected to "分享所选"
+                ),
+                iconFor = {
+                    when (it) {
+                        BookSourceBatchAction.EnableSelected -> Icons.Default.PlayArrow
+                        BookSourceBatchAction.DisableSelected -> Icons.Default.Stop
+                        BookSourceBatchAction.EnableExploreSelected -> Icons.Outlined.Explore
+                        BookSourceBatchAction.DisableExploreSelected -> Icons.Outlined.Explore
+                        BookSourceBatchAction.AddGroup -> Icons.Default.Folder
+                        BookSourceBatchAction.RemoveGroup -> Icons.Default.FolderOff
+                        BookSourceBatchAction.TopSelected -> Icons.Default.KeyboardDoubleArrowUp
+                        BookSourceBatchAction.BottomSelected -> Icons.Default.KeyboardDoubleArrowDown
+                        BookSourceBatchAction.CheckSelected -> Icons.Default.CheckCircle
+                        BookSourceBatchAction.CheckSelectedInterval -> Icons.Default.CheckCircle
+                        BookSourceBatchAction.ExportSelected -> Icons.Default.Language
+                        BookSourceBatchAction.ShareSelected -> Icons.Default.Language
+                    }
+                },
                 onDismiss = { showBottomSheet = false },
                 onAction = {
                     onBatchAction(it)
@@ -644,206 +672,6 @@ private fun BookSourceItem(
                         .padding(top = 10.dp, end = 10.dp)
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun BottomActionBar(
-    selectedCount: Int,
-    totalCount: Int,
-    isAllSelected: Boolean,
-    onSelectAll: () -> Unit,
-    onInvertSelection: () -> Unit,
-    onDeleteSelected: () -> Unit,
-    onMoreClick: () -> Unit
-) {
-    val hasSelection = selectedCount > 0
-    Surface(
-        tonalElevation = 3.dp,
-        shadowElevation = 8.dp,
-        modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .clickable(onClick = onSelectAll)
-                    .padding(end = 8.dp)
-            ) {
-                Checkbox(checked = isAllSelected, onCheckedChange = { onSelectAll() })
-                Text(
-                    text = "全选 ($selectedCount/$totalCount)",
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-            Spacer(modifier = Modifier.weight(1f))
-            TextButton(onClick = onInvertSelection) {
-                Text("反选")
-            }
-            TextButton(
-                onClick = onDeleteSelected,
-                enabled = hasSelection,
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-            ) {
-                Text("删除")
-            }
-            FilledIconButton(
-                onClick = onMoreClick,
-                enabled = hasSelection,
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
-                )
-            ) {
-                Icon(Icons.Default.MoreVert, contentDescription = "批量操作")
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun BatchActionBottomSheet(
-    onDismiss: () -> Unit,
-    onAction: (BookSourceBatchAction) -> Unit
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 32.dp)
-        ) {
-            Text(
-                text = "批量操作",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 16.dp, start = 8.dp)
-            )
-            BatchActionRow(
-                leftIcon = Icons.Default.PlayArrow,
-                leftText = "启用所选",
-                leftAction = { onAction(BookSourceBatchAction.EnableSelected) },
-                rightIcon = Icons.Default.Stop,
-                rightText = "禁用所选",
-                rightAction = { onAction(BookSourceBatchAction.DisableSelected) }
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            BatchActionRow(
-                leftIcon = Icons.Outlined.Explore,
-                leftText = "启用发现",
-                leftAction = { onAction(BookSourceBatchAction.EnableExploreSelected) },
-                rightIcon = Icons.Outlined.Explore,
-                rightText = "禁用发现",
-                rightAction = { onAction(BookSourceBatchAction.DisableExploreSelected) }
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            BatchActionRow(
-                leftIcon = Icons.Default.Folder,
-                leftText = "添加分组",
-                leftAction = { onAction(BookSourceBatchAction.AddGroup) },
-                rightIcon = Icons.Default.FolderOff,
-                rightText = "移除分组",
-                rightAction = { onAction(BookSourceBatchAction.RemoveGroup) }
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            BatchActionRow(
-                leftIcon = Icons.Default.KeyboardDoubleArrowUp,
-                leftText = "置顶所选",
-                leftAction = { onAction(BookSourceBatchAction.TopSelected) },
-                rightIcon = Icons.Default.KeyboardDoubleArrowDown,
-                rightText = "置底所选",
-                rightAction = { onAction(BookSourceBatchAction.BottomSelected) }
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            BatchActionRow(
-                leftIcon = Icons.Default.CheckCircle,
-                leftText = "校验所选",
-                leftAction = { onAction(BookSourceBatchAction.CheckSelected) },
-                rightIcon = Icons.Default.CheckCircle,
-                rightText = "补齐区间",
-                rightAction = { onAction(BookSourceBatchAction.CheckSelectedInterval) }
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            BatchActionRow(
-                leftIcon = Icons.Default.Language,
-                leftText = "导出所选",
-                leftAction = { onAction(BookSourceBatchAction.ExportSelected) },
-                rightIcon = Icons.Default.Language,
-                rightText = "分享所选",
-                rightAction = { onAction(BookSourceBatchAction.ShareSelected) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun BatchActionRow(
-    leftIcon: ImageVector,
-    leftText: String,
-    leftAction: () -> Unit,
-    rightIcon: ImageVector,
-    rightText: String,
-    rightAction: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        BatchActionButton(
-            modifier = Modifier.weight(1f),
-            icon = leftIcon,
-            text = leftText,
-            onClick = leftAction
-        )
-        BatchActionButton(
-            modifier = Modifier.weight(1f),
-            icon = rightIcon,
-            text = rightText,
-            onClick = rightAction
-        )
-    }
-}
-
-@Composable
-private fun BatchActionButton(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-    text: String,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = modifier.height(64.dp),
-        onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = text,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
         }
     }
 }

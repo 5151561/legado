@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.AttributeSet
 import androidx.appcompat.widget.AppCompatTextView
 import io.legado.app.R
-import io.legado.app.lib.theme.accentColor
+import io.legado.app.ui.theme.legadoComponentTokens
 import io.legado.app.utils.getCompatColor
 
 class AccentTextView(context: Context, attrs: AttributeSet?) :
@@ -12,7 +12,7 @@ class AccentTextView(context: Context, attrs: AttributeSet?) :
 
     init {
         if (!isInEditMode) {
-            setTextColor(context.accentColor)
+            setTextColor(context.legadoComponentTokens().shared.accent)
         } else {
             setTextColor(context.getCompatColor(R.color.accent))
         }

@@ -11,7 +11,7 @@ import android.view.View
 import androidx.annotation.ColorInt
 import androidx.annotation.IntDef
 import io.legado.app.R
-import io.legado.app.lib.theme.accentColor
+import io.legado.app.ui.theme.legadoComponentTokens
 
 /**
  * 斜角标签
@@ -53,7 +53,7 @@ class BevelLabelView @JvmOverloads constructor(
         val typedArray = context.obtainStyledAttributes(attrs, R.styleable.BevelLabelView)
         mBgColor = typedArray.getColor(
             R.styleable.BevelLabelView_label_bg_color,
-            context.accentColor
+            context.legadoComponentTokens().shared.accent
         ) //默认红色
         mText = typedArray.getString(R.styleable.BevelLabelView_label_text) ?: ""
         mTextSize =

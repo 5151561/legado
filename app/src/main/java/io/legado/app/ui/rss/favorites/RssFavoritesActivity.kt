@@ -17,6 +17,7 @@ import io.legado.app.data.appDb
 import io.legado.app.databinding.ActivityRssFavoritesBinding
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.ui.theme.applyLegadoTabsStyle
+import io.legado.app.ui.theme.applyLegadoPageSurfaceStyle
 import io.legado.app.utils.gone
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import io.legado.app.utils.visible
@@ -39,6 +40,7 @@ class RssFavoritesActivity : BaseActivity<ActivityRssFavoritesBinding>() {
     private var currentGroup = ""
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
+        binding.root.applyLegadoPageSurfaceStyle()
         initView()
         upFragments()
     }
@@ -65,6 +67,7 @@ class RssFavoritesActivity : BaseActivity<ActivityRssFavoritesBinding>() {
 
     private fun initView() {
         binding.viewPager.adapter = adapter
+        binding.viewPager.applyLegadoPageSurfaceStyle(transparent = true)
         binding.viewPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
             override fun onPageScrolled(
                 position: Int,

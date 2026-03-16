@@ -20,9 +20,9 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.databinding.DialogRecyclerViewBinding
 import io.legado.app.databinding.ItemBookGroupManageBinding
-import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.ui.theme.applyLegadoTopAppBarStyle
+import io.legado.app.ui.theme.legadoComponentTokens
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.ui.widget.recycler.VerticalDivider
 import io.legado.app.utils.applyTint
@@ -67,7 +67,7 @@ class GroupManageDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
         val itemTouchCallback = ItemTouchCallback(adapter)
         itemTouchCallback.isCanDrag = true
         ItemTouchHelper(itemTouchCallback).attachToRecyclerView(binding.recyclerView)
-        binding.tvOk.setTextColor(requireContext().accentColor)
+        binding.tvOk.setTextColor(requireContext().legadoComponentTokens().shared.accent)
         binding.tvOk.visible()
         binding.tvOk.setOnClickListener {
             dismissAllowingStateLoss()

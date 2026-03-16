@@ -37,13 +37,15 @@ import io.legado.app.help.config.AppConfig
 import io.legado.app.help.http.CookieManager
 import io.legado.app.lib.dialogs.SelectItem
 import io.legado.app.lib.dialogs.selector
-import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.model.Download
 import io.legado.app.ui.association.OnLineImportActivity
 import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.login.SourceLoginActivity
 import io.legado.app.ui.rss.favorites.RssFavoritesDialog
+import io.legado.app.ui.theme.applyLegadoPageSurfaceStyle
+import io.legado.app.ui.theme.applyLegadoTopAppBarStyle
+import io.legado.app.ui.theme.legadoComponentTokens
 import io.legado.app.utils.ACache
 import io.legado.app.utils.NetworkUtils
 import io.legado.app.utils.gone
@@ -208,6 +210,14 @@ class ReadRssActivity : VMBaseActivity<ActivityRssReadBinding, ReadRssViewModel>
     }
 
     private fun initView() {
+        val tokens = legadoComponentTokens()
+        binding.root.applyLegadoPageSurfaceStyle()
+        binding.llView.applyLegadoPageSurfaceStyle()
+        binding.titleBar.applyLegadoTopAppBarStyle()
+        binding.progressBar.bgColor = 0x00000000
+        binding.progressBar.secondColor = tokens.shared.subduedAccent
+        binding.progressBar.fontColor = tokens.shared.accent
+        binding.webView.setBackgroundColor(tokens.dialog.container)
         binding.root.setOnApplyWindowInsetsListenerCompat { view, windowInsets ->
             val typeMask = WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime()
             val insets = windowInsets.getInsets(typeMask)
@@ -218,7 +228,7 @@ class ReadRssActivity : VMBaseActivity<ActivityRssReadBinding, ReadRssViewModel>
 
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
     private fun initWebView() {
-        binding.progressBar.fontColor = accentColor
+        binding.progressBar.fontColor = legadoComponentTokens().shared.accent
         binding.webView.webChromeClient = CustomWebChromeClient()
         binding.webView.webViewClient = CustomWebViewClient()
         binding.webView.settings.apply {

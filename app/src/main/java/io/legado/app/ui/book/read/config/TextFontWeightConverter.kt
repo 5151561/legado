@@ -8,7 +8,7 @@ import android.util.AttributeSet
 import io.legado.app.R
 import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.lib.dialogs.alert
-import io.legado.app.lib.theme.accentColor
+import io.legado.app.ui.theme.legadoComponentTokens
 import io.legado.app.ui.widget.text.StrokeTextView
 
 
@@ -16,7 +16,8 @@ class TextFontWeightConverter(context: Context, attrs: AttributeSet?) :
     StrokeTextView(context, attrs) {
 
     private val spannableString = SpannableString(context.getString(R.string.font_weight_text))
-    private var enabledSpan: ForegroundColorSpan = ForegroundColorSpan(context.accentColor)
+    private var enabledSpan: ForegroundColorSpan =
+        ForegroundColorSpan(context.legadoComponentTokens().shared.accent)
     private var onChanged: (() -> Unit)? = null
 
     init {

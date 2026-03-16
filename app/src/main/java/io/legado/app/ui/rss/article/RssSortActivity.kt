@@ -17,6 +17,7 @@ import io.legado.app.help.source.sortUrls
 import io.legado.app.ui.login.SourceLoginActivity
 import io.legado.app.ui.rss.source.edit.RssSourceEditActivity
 import io.legado.app.ui.theme.applyLegadoTabsStyle
+import io.legado.app.ui.theme.applyLegadoPageSurfaceStyle
 import io.legado.app.ui.widget.dialog.VariableDialog
 import io.legado.app.utils.*
 import io.legado.app.utils.viewbindingdelegate.viewBinding
@@ -43,6 +44,7 @@ class RssSortActivity : VMBaseActivity<ActivityRssArtivlesBinding, RssSortViewMo
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
+        binding.root.applyLegadoPageSurfaceStyle()
         binding.viewPager.adapter = adapter
         binding.tabLayout.setupWithViewPager(binding.viewPager)
         binding.tabLayout.applyLegadoTabsStyle()
@@ -104,6 +106,7 @@ class RssSortActivity : VMBaseActivity<ActivityRssArtivlesBinding, RssSortViewMo
                 sortList.clear()
                 sortList.addAll(it)
             }
+            binding.viewPager.applyLegadoPageSurfaceStyle(transparent = true)
             if (sortList.size == 1) {
                 binding.tabLayout.gone()
             } else {

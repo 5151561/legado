@@ -27,6 +27,10 @@ import io.legado.app.ui.rss.read.ReadRssActivity
 import io.legado.app.ui.rss.source.edit.RssSourceEditActivity
 import io.legado.app.ui.rss.source.manage.RssSourceActivity
 import io.legado.app.ui.rss.subscription.RuleSubActivity
+import io.legado.app.ui.theme.applyLegadoPageEmptyStateStyle
+import io.legado.app.ui.theme.applyLegadoPageListStyle
+import io.legado.app.ui.theme.applyLegadoPageSearchStyle
+import io.legado.app.ui.theme.applyLegadoPageSurfaceStyle
 import io.legado.app.utils.applyTint
 import io.legado.app.utils.flowWithLifecycleAndDatabaseChange
 import io.legado.app.utils.openUrl
@@ -71,6 +75,7 @@ class RssFragment() : VMBaseFragment<RssViewModel>(R.layout.fragment_rss),
     private var groupsMenu: SubMenu? = null
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
+        binding.root.applyLegadoPageSurfaceStyle(transparent = true)
         setSupportToolbar(binding.titleBar.toolbar)
         initSearchView()
         initRecyclerView()
@@ -108,7 +113,7 @@ class RssFragment() : VMBaseFragment<RssViewModel>(R.layout.fragment_rss),
     }
 
     private fun initSearchView() {
-        searchView.applyTint(primaryTextColor)
+        searchView.applyLegadoPageSearchStyle()
         searchView.isSubmitButtonEnabled = true
         searchView.queryHint = getString(R.string.rss)
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
@@ -124,8 +129,9 @@ class RssFragment() : VMBaseFragment<RssViewModel>(R.layout.fragment_rss),
     }
 
     private fun initRecyclerView() {
-        binding.recyclerView.setEdgeEffectColor(primaryColor)
+        binding.recyclerView.applyLegadoPageListStyle()
         binding.recyclerView.adapter = adapter
+        binding.tvEmptyMsg.applyLegadoPageEmptyStateStyle()
         adapter.addHeaderView {
             ItemRssBinding.inflate(layoutInflater, it, false).apply {
                 tvName.setText(R.string.rule_subscription)

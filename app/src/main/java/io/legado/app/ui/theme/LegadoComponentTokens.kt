@@ -12,7 +12,9 @@ data class LegadoComponentTokens(
     val input: InputTokens,
     val tabs: TabTokens,
     val fab: FabTokens,
-    val snackbar: SnackbarTokens
+    val snackbar: SnackbarTokens,
+    val preference: PreferenceTokens,
+    val shared: SharedWidgetTokens
 )
 
 data class TopAppBarTokens(
@@ -69,6 +71,20 @@ data class SnackbarTokens(
     val elevation: Float
 )
 
+data class PreferenceTokens(
+    @ColorInt val headline: Int,
+    @ColorInt val supporting: Int,
+    @ColorInt val leadingIcon: Int,
+    @ColorInt val trailing: Int,
+    @ColorInt val divider: Int
+)
+
+data class SharedWidgetTokens(
+    @ColorInt val accent: Int,
+    @ColorInt val onAccent: Int,
+    @ColorInt val subduedAccent: Int
+)
+
 fun Context.legadoComponentTokens(): LegadoComponentTokens {
     val state = ThemeResolver.resolve(this)
     val onToolbar = contentColorFor(state.toolbar.toArgb())
@@ -120,13 +136,27 @@ fun Context.legadoComponentTokens(): LegadoComponentTokens {
         dismiss = state.onSurfaceVariant.toArgb(),
         elevation = elevation
     )
+    val preference = PreferenceTokens(
+        headline = state.onSurface.toArgb(),
+        supporting = state.onSurfaceVariant.toArgb(),
+        leadingIcon = state.secondary.toArgb(),
+        trailing = state.secondary.toArgb(),
+        divider = withAlpha(state.outline.toArgb(), 0.3f)
+    )
+    val shared = SharedWidgetTokens(
+        accent = state.secondary.toArgb(),
+        onAccent = contentColorFor(state.secondary.toArgb()),
+        subduedAccent = withAlpha(state.secondary.toArgb(), 0.8f)
+    )
     return LegadoComponentTokens(
         topAppBar = topAppBar,
         dialog = dialog,
         input = input,
         tabs = tabs,
         fab = fab,
-        snackbar = snackbar
+        snackbar = snackbar,
+        preference = preference,
+        shared = shared
     )
 }
 

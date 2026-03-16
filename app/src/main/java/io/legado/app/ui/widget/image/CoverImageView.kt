@@ -22,8 +22,8 @@ import io.legado.app.constant.AppPattern
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.glide.ImageLoader
 import io.legado.app.help.glide.OkHttpModelLoader
-import io.legado.app.lib.theme.accentColor
 import io.legado.app.model.BookCover
+import io.legado.app.ui.theme.legadoComponentTokens
 import io.legado.app.utils.textHeight
 import io.legado.app.utils.toStringArray
 
@@ -123,7 +123,7 @@ class CoverImageView @JvmOverloads constructor(
                 namePaint.color = Color.WHITE
                 namePaint.style = Paint.Style.STROKE
                 canvas.drawText(char, startX, startY, namePaint)
-                namePaint.color = context.accentColor
+                namePaint.color = context.legadoComponentTokens().shared.accent
                 namePaint.style = Paint.Style.FILL
                 canvas.drawText(char, startX, startY, namePaint)
                 startY += namePaint.textHeight
@@ -145,7 +145,7 @@ class CoverImageView @JvmOverloads constructor(
                 authorPaint.color = Color.WHITE
                 authorPaint.style = Paint.Style.STROKE
                 canvas.drawText(it, startX, startY, authorPaint)
-                authorPaint.color = context.accentColor
+                authorPaint.color = context.legadoComponentTokens().shared.accent
                 authorPaint.style = Paint.Style.FILL
                 canvas.drawText(it, startX, startY, authorPaint)
                 startY += authorPaint.textHeight

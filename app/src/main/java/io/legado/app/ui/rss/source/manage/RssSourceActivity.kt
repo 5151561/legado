@@ -25,6 +25,10 @@ import io.legado.app.ui.association.ImportRssSourceDialog
 import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.qrcode.QrCodeResult
 import io.legado.app.ui.rss.source.edit.RssSourceEditActivity
+import io.legado.app.ui.theme.applyLegadoPageListStyle
+import io.legado.app.ui.theme.applyLegadoPageSearchStyle
+import io.legado.app.ui.theme.applyLegadoPageSurfaceStyle
+import io.legado.app.ui.theme.applyLegadoTopAppBarStyle
 import io.legado.app.ui.widget.SelectActionBar
 import io.legado.app.ui.widget.recycler.DragSelectTouchHelper
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
@@ -97,6 +101,8 @@ class RssSourceActivity : VMBaseActivity<ActivityRssSourceBinding, RssSourceView
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
+        binding.root.applyLegadoPageSurfaceStyle()
+        binding.titleBar.applyLegadoTopAppBarStyle()
         initRecyclerView()
         initSearchView()
         initGroupFlow()
@@ -178,7 +184,7 @@ class RssSourceActivity : VMBaseActivity<ActivityRssSourceBinding, RssSourceView
     }
 
     private fun initRecyclerView() {
-        binding.recyclerView.setEdgeEffectColor(primaryColor)
+        binding.recyclerView.applyLegadoPageListStyle()
         binding.recyclerView.addItemDecoration(VerticalDivider(this))
         binding.recyclerView.adapter = adapter
         // When this page is opened, it is in selection mode
@@ -194,7 +200,7 @@ class RssSourceActivity : VMBaseActivity<ActivityRssSourceBinding, RssSourceView
 
     private fun initSearchView() {
         binding.titleBar.findViewById<SearchView>(R.id.search_view).let {
-            it.applyTint(primaryTextColor)
+            it.applyLegadoPageSearchStyle()
             it.onActionViewExpanded()
             it.queryHint = getString(R.string.search_rss_source)
             it.clearFocus()

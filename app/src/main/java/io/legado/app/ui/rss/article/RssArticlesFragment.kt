@@ -18,8 +18,10 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.RssArticle
 import io.legado.app.databinding.FragmentRssArticlesBinding
 import io.legado.app.databinding.ViewLoadMoreBinding
-import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.primaryColor
+import io.legado.app.ui.theme.legadoComponentTokens
+import io.legado.app.ui.theme.applyLegadoPageListStyle
+import io.legado.app.ui.theme.applyLegadoRefreshStyle
 import io.legado.app.ui.rss.read.ReadRssActivity
 import io.legado.app.ui.widget.recycler.LoadMoreView
 import io.legado.app.ui.widget.recycler.VerticalDivider
@@ -68,8 +70,8 @@ class RssArticlesFragment() : VMBaseFragment<RssArticlesViewModel>(R.layout.frag
     }
 
     private fun initView() = binding.run {
-        refreshLayout.setColorSchemeColors(accentColor)
-        recyclerView.setEdgeEffectColor(primaryColor)
+        refreshLayout.applyLegadoRefreshStyle()
+        recyclerView.applyLegadoPageListStyle()
         recyclerView.applyNavigationBarPadding()
         loadMoreView.setOnClickListener {
             if (!loadMoreView.isLoading) {

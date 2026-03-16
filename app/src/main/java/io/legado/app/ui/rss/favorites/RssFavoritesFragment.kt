@@ -14,6 +14,8 @@ import io.legado.app.data.entities.RssStar
 import io.legado.app.databinding.FragmentRssArticlesBinding
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.primaryColor
+import io.legado.app.ui.theme.applyLegadoPageListStyle
+import io.legado.app.ui.theme.applyLegadoRefreshStyle
 import io.legado.app.ui.rss.read.ReadRssActivity
 import io.legado.app.ui.widget.recycler.VerticalDivider
 import io.legado.app.utils.applyNavigationBarPadding
@@ -47,7 +49,8 @@ class RssFavoritesFragment() : VMBaseFragment<RssFavoritesViewModel>(R.layout.fr
 
     private fun initView() = binding.run {
         refreshLayout.isEnabled = false
-        recyclerView.setEdgeEffectColor(primaryColor)
+        refreshLayout.applyLegadoRefreshStyle()
+        recyclerView.applyLegadoPageListStyle()
         recyclerView.layoutManager = run {
             recyclerView.addItemDecoration(VerticalDivider(requireContext()))
             LinearLayoutManager(requireContext())

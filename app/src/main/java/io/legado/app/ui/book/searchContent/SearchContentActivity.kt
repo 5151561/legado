@@ -21,15 +21,15 @@ import io.legado.app.databinding.ActivitySearchContentBinding
 import io.legado.app.help.IntentData
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.isLocal
-import io.legado.app.lib.theme.bottomBackground
-import io.legado.app.lib.theme.getPrimaryTextColor
-import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.ui.theme.applyLegadoFabStyle
+import io.legado.app.ui.theme.applyLegadoPageListStyle
+import io.legado.app.ui.theme.applyLegadoPageSearchStyle
+import io.legado.app.ui.theme.applyLegadoPageSurfaceStyle
+import io.legado.app.ui.theme.applyLegadoTopAppBarStyle
+import io.legado.app.ui.theme.legadoComponentTokens
 import io.legado.app.ui.widget.recycler.UpLinearLayoutManager
 import io.legado.app.ui.widget.recycler.VerticalDivider
-import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.applyNavigationBarMargin
-import io.legado.app.utils.applyTint
 import io.legado.app.utils.invisible
 import io.legado.app.utils.observeEvent
 import io.legado.app.utils.postEvent
@@ -59,13 +59,14 @@ class SearchContentActivity :
     private var initJob: Job? = null
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
-        val bbg = bottomBackground
-        val btc = getPrimaryTextColor(ColorUtils.isColorLight(bbg))
-        binding.llSearchBaseInfo.setBackgroundColor(bbg)
+        val tokens = legadoComponentTokens()
+        binding.root.applyLegadoPageSurfaceStyle()
+        binding.titleBar.applyLegadoTopAppBarStyle()
+        binding.llSearchBaseInfo.setBackgroundColor(tokens.tabs.container)
         binding.llSearchBaseInfo.applyNavigationBarMargin()
-        binding.tvCurrentSearchInfo.setTextColor(btc)
-        binding.ivSearchContentTop.setColorFilter(btc)
-        binding.ivSearchContentBottom.setColorFilter(btc)
+        binding.tvCurrentSearchInfo.setTextColor(tokens.preference.supporting)
+        binding.ivSearchContentTop.setColorFilter(tokens.preference.trailing)
+        binding.ivSearchContentBottom.setColorFilter(tokens.preference.trailing)
         val searchResultList = IntentData.get<List<SearchResult>>("searchResultList")
         val position = intent.getIntExtra("searchResultIndex", 0)
         val noSearchResult = searchResultList == null
@@ -108,7 +109,7 @@ class SearchContentActivity :
     }
 
     private fun initSearchView(requestFocus: Boolean) {
-        searchView.applyTint(primaryTextColor)
+        searchView.applyLegadoPageSearchStyle()
         searchView.isSubmitButtonEnabled = true
         searchView.queryHint = getString(R.string.search)
         if (requestFocus) searchView.isIconified = false
@@ -126,6 +127,7 @@ class SearchContentActivity :
     }
 
     private fun initRecyclerView() {
+        binding.recyclerView.applyLegadoPageListStyle()
         binding.recyclerView.layoutManager = mLayoutManager
         binding.recyclerView.addItemDecoration(VerticalDivider(this))
         binding.recyclerView.adapter = adapter

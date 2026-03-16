@@ -17,8 +17,8 @@ import io.legado.app.databinding.ItemFindBookBinding
 import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.help.source.clearExploreKindsCache
 import io.legado.app.help.source.exploreKinds
-import io.legado.app.lib.theme.accentColor
 import io.legado.app.ui.login.SourceLoginActivity
+import io.legado.app.ui.theme.legadoComponentTokens
 import io.legado.app.ui.widget.dialog.TextDialog
 import io.legado.app.utils.activity
 import io.legado.app.utils.dpToPx
@@ -58,7 +58,7 @@ class ExploreAdapter(context: Context, val callBack: CallBack) :
             }
             if (exIndex == holder.layoutPosition) {
                 ivStatus.setImageResource(R.drawable.ic_arrow_down)
-                rotateLoading.loadingColor = context.accentColor
+                rotateLoading.loadingColor = context.legadoComponentTokens().shared.accent
                 rotateLoading.visible()
                 if (scrollTo >= 0) {
                     callBack.scrollTo(scrollTo)

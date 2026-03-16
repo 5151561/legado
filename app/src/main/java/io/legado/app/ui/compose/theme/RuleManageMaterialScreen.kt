@@ -5,33 +5,23 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CheckBox
-import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,8 +30,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.ui.unit.dp
 
 data class RuleManageItemUi(
@@ -99,51 +87,14 @@ fun RuleManageMaterialScreen(
         },
         bottomBar = {
             if (totalCount > 0) {
-                Surface(
-                    tonalElevation = 3.dp,
-                    shadowElevation = 8.dp,
-                    modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(end = 8.dp)
-                        ) {
-                            Checkbox(
-                                checked = isAllSelected,
-                                onCheckedChange = { onSelectAll() }
-                            )
-                            Text(
-                                text = "全选 ($selectedCount/$totalCount)",
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                        }
-                        Spacer(modifier = Modifier.weight(1f))
-                        TextButton(onClick = onInvertSelection, enabled = totalCount > 0) {
-                            Text("反选")
-                        }
-                        TextButton(
-                            onClick = onDeleteSelection,
-                            enabled = hasSelection
-                        ) {
-                            Text("删除")
-                        }
-                        FilledIconButton(
-                            onClick = { showBatchSheet = true },
-                            enabled = hasSelection,
-                            colors = IconButtonDefaults.filledIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Icon(Icons.Rounded.MoreVert, contentDescription = null)
-                        }
-                    }
-                }
+                LegadoSelectionBottomBar(
+                    selectedCount = selectedCount,
+                    totalCount = totalCount,
+                    onSelectAll = onSelectAll,
+                    onInvertSelection = onInvertSelection,
+                    onDeleteSelection = onDeleteSelection,
+                    onMoreClick = { showBatchSheet = true }
+                )
             }
         }
     ) { paddingValues ->
@@ -187,25 +138,16 @@ fun RuleManageMaterialScreen(
         }
 
         if (showBatchSheet) {
-            ModalBottomSheet(onDismissRequest = { showBatchSheet = false }) {
-                Column(
-                    modifier = Modifier.padding(
-                        horizontal = LegadoPageDefaults.HorizontalPadding,
-                        vertical = 8.dp
-                    )
-                ) {
-                    batchActions.forEach { action ->
-                        DropdownMenuItem(
-                            text = { Text(action.title) },
-                            onClick = {
-                                onBatchAction(action.key)
-                                showBatchSheet = false
-                            },
-                            leadingIcon = { Icon(action.icon, contentDescription = null) }
-                        )
-                    }
+            LegadoBatchActionSheet(
+                title = "批量操作",
+                actions = batchActions.map { it to it.title },
+                iconFor = { it.icon },
+                onDismiss = { showBatchSheet = false },
+                onAction = {
+                    onBatchAction(it.key)
+                    showBatchSheet = false
                 }
-            }
+            )
         }
     }
 }

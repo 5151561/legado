@@ -19,9 +19,9 @@ import io.legado.app.databinding.DialogEditTextBinding
 import io.legado.app.databinding.DialogRecyclerViewBinding
 import io.legado.app.databinding.ItemGroupManageBinding
 import io.legado.app.lib.dialogs.alert
-import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.ui.theme.applyLegadoTopAppBarStyle
+import io.legado.app.ui.theme.legadoComponentTokens
 import io.legado.app.ui.widget.recycler.VerticalDivider
 import io.legado.app.utils.applyTint
 import io.legado.app.utils.requestInputMethod
@@ -53,7 +53,7 @@ class GroupManageDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.addItemDecoration(VerticalDivider(requireContext()))
         recyclerView.adapter = adapter
-        tvOk.setTextColor(requireContext().accentColor)
+        tvOk.setTextColor(requireContext().legadoComponentTokens().shared.accent)
         tvOk.visible()
         tvOk.setOnClickListener {
             dismissAllowingStateLoss()

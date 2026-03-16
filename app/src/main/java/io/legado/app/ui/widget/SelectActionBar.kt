@@ -12,11 +12,11 @@ import androidx.appcompat.widget.PopupMenu
 import io.legado.app.R
 import io.legado.app.databinding.ViewSelectActionBarBinding
 import io.legado.app.lib.theme.TintHelper
-import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.bottomBackground
 import io.legado.app.lib.theme.elevation
 import io.legado.app.lib.theme.getPrimaryTextColor
 import io.legado.app.lib.theme.getSecondaryDisabledTextColor
+import io.legado.app.ui.theme.legadoComponentTokens
 import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.applyNavigationBarPadding
 import io.legado.app.utils.visible
@@ -42,7 +42,11 @@ class SelectActionBar @JvmOverloads constructor(
             setBackgroundColor(context.bottomBackground)
             elevation = context.elevation
             binding.cbSelectedAll.setTextColor(primaryTextColor)
-            TintHelper.setTint(binding.cbSelectedAll, context.accentColor, !bgIsLight)
+            TintHelper.setTint(
+                binding.cbSelectedAll,
+                context.legadoComponentTokens().shared.accent,
+                !bgIsLight
+            )
             binding.ivMenuMore.setColorFilter(disabledColor, PorterDuff.Mode.SRC_IN)
             binding.cbSelectedAll.setOnUserCheckedChangeListener { isChecked ->
                 callBack?.selectAll(isChecked)
