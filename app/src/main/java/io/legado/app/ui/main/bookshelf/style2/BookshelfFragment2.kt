@@ -19,11 +19,20 @@ import io.legado.app.data.entities.BookGroup
 import io.legado.app.databinding.FragmentBookshelf2Binding
 import io.legado.app.help.book.isLocal
 import io.legado.app.help.config.AppConfig
+import io.legado.app.ui.about.AppLogDialog
+import io.legado.app.ui.book.cache.CacheActivity
 import io.legado.app.ui.book.group.GroupEditDialog
+import io.legado.app.ui.book.group.GroupManageDialog
 import io.legado.app.ui.book.info.BookInfoActivity
+import io.legado.app.ui.book.import.local.ImportBookActivity
+import io.legado.app.ui.book.import.remote.RemoteBookActivity
+import io.legado.app.ui.book.manage.BookshelfManageActivity
+import io.legado.app.ui.book.search.SearchActivity
 import io.legado.app.ui.compose.theme.LegadoComposeTheme
-import io.legado.app.ui.main.bookshelf.BookshelfGroupMaterialScreen
+import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.main.bookshelf.BaseBookshelfFragment
+import io.legado.app.ui.main.bookshelf.style1.BookshelfAddAction
+import io.legado.app.ui.main.bookshelf.style1.BookshelfOverflowAction
 import io.legado.app.utils.flowWithLifecycleAndDatabaseChangeFirst
 import io.legado.app.utils.observeEvent
 import io.legado.app.utils.showDialogFragment
@@ -68,7 +77,7 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
     private var showLastUpdateTime by mutableStateOf(AppConfig.showLastUpdateTime)
     private var isGridLayout by mutableStateOf(AppConfig.bookshelfLayout != 0)
     private var gridColumns by mutableIntStateOf((AppConfig.bookshelfLayout + 2).coerceAtLeast(2))
-    private var composeTitle by mutableStateOf("")
+    private var isRefreshing by mutableStateOf(false)
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
         initComposeContent()
@@ -79,8 +88,7 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
     private fun initComposeContent() {
         binding.composeBookshelfContent.setContent {
             LegadoComposeTheme {
-                BookshelfGroupMaterialScreen(
-                    title = composeTitle,
+                BookshelfComposeScreen(
                     groupId = composeGroupId,
                     groups = composeGroups,
                     books = composeBooks,
@@ -89,10 +97,53 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                     isGrid = isGridLayout,
                     gridColumns = gridColumns,
                     scrollRequest = scrollRequest,
-                    onRefresh = {
-                        if (enableRefresh) {
-                            activityViewModel.upToc(books)
+                    isRefreshing = isRefreshing,
+                    onSearchClick = {
+                        startActivity<SearchActivity>()
+                    },
+                    onAddActionClick = { action ->
+                        when (action) {
+                            BookshelfAddAction.ImportLocal -> startActivity<ImportBookActivity>()
+                            BookshelfAddAction.AddRemote -> startActivity<RemoteBookActivity>()
+                            BookshelfAddAction.AddUrl -> showAddBookByUrlAlert()
                         }
+                    },
+                    onOverflowActionClick = { action ->
+                        when (action) {
+                            BookshelfOverflowAction.UpdateToc -> activityViewModel.upToc(books)
+                            BookshelfOverflowAction.Layout -> configBookshelf()
+                            BookshelfOverflowAction.GroupManage -> showDialogFragment<GroupManageDialog>()
+                            BookshelfOverflowAction.BookshelfManage -> {
+                                startActivity<BookshelfManageActivity> {
+                                    putExtra("groupId", groupId)
+                                }
+                            }
+
+                            BookshelfOverflowAction.CacheExport -> {
+                                startActivity<CacheActivity> {
+                                    putExtra("groupId", groupId)
+                                }
+                            }
+
+                            BookshelfOverflowAction.ExportBookshelf -> {
+                                viewModel.exportBookshelf(books) { file ->
+                                    exportBookshelfResult.launch {
+                                        mode = HandleFileContract.EXPORT
+                                        fileData = HandleFileContract.FileData(
+                                            "bookshelf.json",
+                                            file,
+                                            "application/json"
+                                        )
+                                    }
+                                }
+                            }
+
+                            BookshelfOverflowAction.ImportBookshelf -> importBookshelfAlert(groupId)
+                            BookshelfOverflowAction.Log -> showDialogFragment<AppLogDialog>()
+                        }
+                    },
+                    onRefresh = {
+                        refreshBooks()
                     },
                     onBackToRoot = {
                         groupId = BookGroup.IdRoot
@@ -137,7 +188,7 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                 )
             }
             if (groupId != BookGroup.IdRoot) {
-                updateTitle()
+                updateRefreshState()
             }
         }
     }
@@ -149,7 +200,7 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
     private fun initBooksData() {
         updateSettings()
         composeGroupId = groupId
-        updateTitle()
+        updateRefreshState()
         booksFlowJob?.cancel()
         booksFlowJob = viewLifecycleOwner.lifecycleScope.launch {
             appDb.bookDao.flowByGroup(groupId).map { list ->
@@ -190,13 +241,11 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
         }
     }
 
-    private fun updateTitle() {
+    private fun updateRefreshState() {
         if (groupId == BookGroup.IdRoot) {
-            composeTitle = getString(R.string.bookshelf)
             enableRefresh = true
         } else {
             bookGroups.firstOrNull { it.groupId == groupId }?.let {
-                composeTitle = it.groupName
                 enableRefresh = it.enableRefresh
             }
         }
@@ -215,6 +264,20 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
         }
     }
 
+    private fun refreshBooks() {
+        if (!enableRefresh) {
+            isRefreshing = false
+            return
+        }
+        val refreshableBooks = books.filter { !it.isLocal && it.canUpdate }
+        if (refreshableBooks.isEmpty()) {
+            isRefreshing = false
+            return
+        }
+        isRefreshing = true
+        activityViewModel.upToc(refreshableBooks)
+    }
+
     fun back(): Boolean {
         if (groupId != BookGroup.IdRoot) {
             groupId = BookGroup.IdRoot
@@ -231,6 +294,9 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
 
     override fun observeLiveBus() {
         super.observeLiveBus()
+        activityViewModel.onUpBooksLiveData.observe(this) {
+            isRefreshing = it > 0
+        }
         observeEvent<String>(EventBus.UP_BOOKSHELF) {
             refreshUpdatingState()
         }

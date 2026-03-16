@@ -37,6 +37,7 @@
     <string name="delete">Xóa</string>
     <string name="delete_select_group">Xóa nhóm đã chọn</string>
     <string name="delete_all">Xóa tất cả</string>
+    <string name="custom_export_section">Tùy chỉnh chương xuất EPUB</string>
     <string name="replace">Thay thế</string>
     <string name="replace_purify">Thay thế và lọc</string>
     <string name="replace_purify_desc">Cấu hình quy tắc thay thế</string>
@@ -249,6 +250,7 @@
     <string name="find_on_www">Khám phá</string>
     <string name="find_source_manage">Quản lý khám phá</string>
     <string name="find_empty">Không có nội dung. Hãy vào Quản lý nguồn để thêm!</string>
+    <string name="del_all">Xóa tất cả</string>
     <string name="searchHistory">Lịch sử tìm kiếm</string>
     <string name="clear">Xóa</string>
     <string name="showTitle">Hiển thị tiêu đề sách trong văn bản</string>
@@ -1142,7 +1144,6 @@
     <string name="open_book_info_by_click_title">Nhấn vào tên sách để mở chi tiết</string>
     <string name="export_wait">Đang chờ xuất</string>
     <string name="default_home_page">Trang chủ mặc định</string>
-    <string name="show_bookshelf_fast_scroller">Hiển thị thanh cuộn nhanh</string>
     <string name="export_all_use_book_source">Xuất nguồn sách cho tất cả các sách</string>
     <string name="keep_enable">Giữ trạng thái kích hoạt</string>
     <string name="preview_image_by_click">Nhấn để xem trước ảnh</string>
@@ -1210,6 +1211,9 @@
     <string name="hide_manga_title">Ẩn tiêu đề danh sách manga</string>
     <string name="refresh_explore">Làm mới khám phá</string>
     <string name="padding_display_cutouts">Đệm các phần cắt hiển thị</string>
+    <string name="system_media_control_compatibility_change">Thay đổi tương thích điều khiển phương tiện hệ thống</string>
+    <string name="system_media_control_compatibility_change_summary">Nếu điều khiển phương tiện hệ thống không hiển thị trên màn hình khóa, bạn có thể thử bật tùy chọn này, ví dụ trên OneUI 7.0 hoặc thiết bị Vivo.</string>
+    <string name="read_aloud_pause_resume">Tạm dừng/Tiếp tục đọc</string>
     <string name="manga_epaper">Màn hình mực</string>
     <string name="manga_epaper_stting">Cài đặt màn hình mực</string>
     <string name="manga_epaper_value">Ngưỡng</string>

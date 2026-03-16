@@ -44,22 +44,19 @@ import androidx.compose.material.icons.outlined.Widgets
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -95,13 +92,6 @@ enum class BookshelfOverflowAction(
     Log(R.string.log)
 }
 
-private enum class BookshelfSourceFilter(
-    @param:StringRes val labelRes: Int
-) {
-    All(R.string.all),
-    Local(R.string.local)
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookshelfTabsComposeScreen(
@@ -113,6 +103,7 @@ fun BookshelfTabsComposeScreen(
     isGrid: Boolean,
     gridColumns: Int,
     scrollRequest: Int,
+    isRefreshing: Boolean,
     onSearchClick: () -> Unit,
     onAddActionClick: (BookshelfAddAction) -> Unit,
     onOverflowActionClick: (BookshelfOverflowAction) -> Unit,
@@ -124,7 +115,6 @@ fun BookshelfTabsComposeScreen(
 ) {
     val listState = rememberLazyListState()
     val gridState = rememberLazyGridState()
-    var sourceFilter by rememberSaveable { mutableStateOf(BookshelfSourceFilter.All) }
 
     LaunchedEffect(scrollRequest, isGrid) {
         if (scrollRequest <= 0) return@LaunchedEffect
@@ -135,20 +125,10 @@ fun BookshelfTabsComposeScreen(
         }
     }
 
-    val filteredBooks = remember(books, sourceFilter) {
-        when (sourceFilter) {
-            BookshelfSourceFilter.All -> books
-            BookshelfSourceFilter.Local -> books.filter { it.isLocal }
-        }
-    }
-    val selectedGroup = groups.getOrNull(selectedTabIndex)
-
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             BookshelfTopBar(
-                sourceFilter = sourceFilter,
-                onFilterSelected = { sourceFilter = it },
                 onSearchClick = onSearchClick,
                 onOverflowActionClick = onOverflowActionClick
             )
@@ -159,50 +139,50 @@ fun BookshelfTabsComposeScreen(
             )
         }
     ) { innerPadding ->
-        if (isGrid) {
-            BookshelfTabGrid(
-                selectedTabIndex = selectedTabIndex,
-                groups = groups,
-                books = filteredBooks,
-                totalBooks = books.size,
-                selectedGroup = selectedGroup,
-                showUnread = showUnread,
-                state = gridState,
-                gridColumns = gridColumns,
-                contentPadding = PaddingValues(
-                    start = LegadoPageDefaults.HorizontalPadding,
-                    top = innerPadding.calculateTopPadding() + LegadoPageDefaults.SectionSpacing,
-                    end = LegadoPageDefaults.HorizontalPadding,
-                    bottom = innerPadding.calculateBottomPadding() + 120.dp
-                ),
-                onRefresh = onRefresh,
-                onTabClick = onTabClick,
-                onTabLongClick = onTabLongClick,
-                onBookClick = onBookClick,
-                onBookLongClick = onBookLongClick
-            )
-        } else {
-            BookshelfTabList(
-                selectedTabIndex = selectedTabIndex,
-                groups = groups,
-                books = filteredBooks,
-                totalBooks = books.size,
-                selectedGroup = selectedGroup,
-                showUnread = showUnread,
-                showLastUpdateTime = showLastUpdateTime,
-                onRefresh = onRefresh,
-                state = listState,
-                contentPadding = PaddingValues(
-                    start = LegadoPageDefaults.HorizontalPadding,
-                    top = innerPadding.calculateTopPadding() + LegadoPageDefaults.SectionSpacing,
-                    end = LegadoPageDefaults.HorizontalPadding,
-                    bottom = innerPadding.calculateBottomPadding() + 120.dp
-                ),
-                onTabClick = onTabClick,
-                onTabLongClick = onTabLongClick,
-                onBookClick = onBookClick,
-                onBookLongClick = onBookLongClick
-            )
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            if (isGrid) {
+                BookshelfTabGrid(
+                    selectedTabIndex = selectedTabIndex,
+                    groups = groups,
+                    books = books,
+                    showUnread = showUnread,
+                    state = gridState,
+                    gridColumns = gridColumns,
+                    contentPadding = PaddingValues(
+                        start = LegadoPageDefaults.HorizontalPadding,
+                        top = LegadoPageDefaults.SectionSpacing,
+                        end = LegadoPageDefaults.HorizontalPadding,
+                        bottom = 120.dp
+                    ),
+                    onTabClick = onTabClick,
+                    onTabLongClick = onTabLongClick,
+                    onBookClick = onBookClick,
+                    onBookLongClick = onBookLongClick
+                )
+            } else {
+                BookshelfTabList(
+                    selectedTabIndex = selectedTabIndex,
+                    groups = groups,
+                    books = books,
+                    showUnread = showUnread,
+                    showLastUpdateTime = showLastUpdateTime,
+                    state = listState,
+                    contentPadding = PaddingValues(
+                        start = LegadoPageDefaults.HorizontalPadding,
+                        top = LegadoPageDefaults.SectionSpacing,
+                        end = LegadoPageDefaults.HorizontalPadding,
+                        bottom = 120.dp
+                    ),
+                    onTabClick = onTabClick,
+                    onTabLongClick = onTabLongClick,
+                    onBookClick = onBookClick,
+                    onBookLongClick = onBookLongClick
+                )
+            }
         }
     }
 }
@@ -210,8 +190,6 @@ fun BookshelfTabsComposeScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BookshelfTopBar(
-    sourceFilter: BookshelfSourceFilter,
-    onFilterSelected: (BookshelfSourceFilter) -> Unit,
     onSearchClick: () -> Unit,
     onOverflowActionClick: (BookshelfOverflowAction) -> Unit
 ) {
@@ -277,28 +255,6 @@ private fun BookshelfTopBar(
                     }
                 }
             }
-            PrimaryTabRow(
-                selectedTabIndex = sourceFilter.ordinal,
-                containerColor = MaterialTheme.colorScheme.surface
-            ) {
-                BookshelfSourceFilter.entries.forEach { filter ->
-                    Tab(
-                        selected = sourceFilter == filter,
-                        onClick = { onFilterSelected(filter) },
-                        text = {
-                            Text(
-                                text = androidx.compose.ui.res.stringResource(filter.labelRes),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = if (sourceFilter == filter) {
-                                    FontWeight.SemiBold
-                                } else {
-                                    FontWeight.Medium
-                                }
-                            )
-                        }
-                    )
-                }
-            }
         }
     }
 }
@@ -348,11 +304,8 @@ private fun BookshelfTabList(
     selectedTabIndex: Int,
     groups: List<BookshelfGroupUi>,
     books: List<BookshelfBookUi>,
-    totalBooks: Int,
-    selectedGroup: BookshelfGroupUi?,
     showUnread: Boolean,
     showLastUpdateTime: Boolean,
-    onRefresh: () -> Unit,
     state: androidx.compose.foundation.lazy.LazyListState,
     contentPadding: PaddingValues,
     onTabClick: (Int) -> Unit,
@@ -366,14 +319,6 @@ private fun BookshelfTabList(
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item {
-            BookshelfOverviewCard(
-                selectedGroup = selectedGroup,
-                visibleCount = books.size,
-                totalCount = totalBooks,
-                onRefresh = onRefresh
-            )
-        }
         if (groups.isNotEmpty()) {
             item {
                 BookshelfGroupSelector(
@@ -407,13 +352,10 @@ private fun BookshelfTabGrid(
     selectedTabIndex: Int,
     groups: List<BookshelfGroupUi>,
     books: List<BookshelfBookUi>,
-    totalBooks: Int,
-    selectedGroup: BookshelfGroupUi?,
     showUnread: Boolean,
     state: LazyGridState,
     gridColumns: Int,
     contentPadding: PaddingValues,
-    onRefresh: () -> Unit,
     onTabClick: (Int) -> Unit,
     onTabLongClick: (BookshelfGroupUi) -> Unit,
     onBookClick: (BookshelfBookUi) -> Unit,
@@ -427,14 +369,6 @@ private fun BookshelfTabGrid(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            BookshelfOverviewCard(
-                selectedGroup = selectedGroup,
-                visibleCount = books.size,
-                totalCount = totalBooks,
-                onRefresh = onRefresh
-            )
-        }
         if (groups.isNotEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 BookshelfGroupSelector(
@@ -462,43 +396,6 @@ private fun BookshelfTabGrid(
     }
 }
 
-@Composable
-private fun BookshelfOverviewCard(
-    selectedGroup: BookshelfGroupUi?,
-    visibleCount: Int,
-    totalCount: Int,
-    onRefresh: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = selectedGroup?.groupName ?: "全部书籍",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = "当前展示 $visibleCount 本，书架共 $totalCount 本",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        FilledTonalButton(onClick = onRefresh) {
-            Icon(
-                imageVector = Icons.Outlined.Update,
-                contentDescription = null
-            )
-            Text(
-                text = "刷新书架",
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
-    }
-}
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun BookshelfGroupSelector(
@@ -507,43 +404,36 @@ private fun BookshelfGroupSelector(
     onTabClick: (Int) -> Unit,
     onTabLongClick: (BookshelfGroupUi) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = "分组",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(groups, key = { it.groupId }) { group ->
-                val index = groups.indexOf(group)
-                val selected = index == selectedTabIndex
-                Surface(
-                    modifier = Modifier
-                        .clip(MaterialTheme.shapes.extraLarge)
-                        .combinedClickable(
-                            onClick = { onTabClick(index) },
-                            onLongClick = { onTabLongClick(group) }
-                        ),
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(groups, key = { it.groupId }) { group ->
+            val index = groups.indexOf(group)
+            val selected = index == selectedTabIndex
+            Surface(
+                modifier = Modifier
+                    .clip(MaterialTheme.shapes.extraLarge)
+                    .combinedClickable(
+                        onClick = { onTabClick(index) },
+                        onLongClick = { onTabLongClick(group) }
+                    ),
+                color = if (selected) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surface
+                },
+                tonalElevation = if (selected) 2.dp else 0.dp,
+                shadowElevation = 0.dp
+            ) {
+                Text(
+                    text = group.groupName,
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+                    style = MaterialTheme.typography.labelLarge,
                     color = if (selected) {
-                        MaterialTheme.colorScheme.primaryContainer
+                        MaterialTheme.colorScheme.onPrimaryContainer
                     } else {
-                        MaterialTheme.colorScheme.surface
+                        MaterialTheme.colorScheme.onSurfaceVariant
                     },
-                    tonalElevation = if (selected) 2.dp else 0.dp,
-                    shadowElevation = 0.dp
-                ) {
-                    Text(
-                        text = group.groupName,
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = if (selected) {
-                            MaterialTheme.colorScheme.onPrimaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
-                    )
-                }
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
+                )
             }
         }
     }

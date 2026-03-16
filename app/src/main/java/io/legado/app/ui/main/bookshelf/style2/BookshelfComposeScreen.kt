@@ -24,45 +24,66 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AutoStories
-import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.BookmarkAdded
+import androidx.compose.material.icons.outlined.CloudDownload
+import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.FindInPage
 import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.LibraryAdd
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.SettingsInputComposite
+import androidx.compose.material.icons.outlined.Source
+import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.SubdirectoryArrowLeft
+import androidx.compose.material.icons.outlined.Update
+import androidx.compose.material.icons.outlined.Widgets
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.ui.graphics.Color
 import io.legado.app.R
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.ui.compose.theme.LegadoPageDefaults
 import io.legado.app.ui.compose.theme.LegadoTheme
+import io.legado.app.ui.main.bookshelf.style1.BookshelfAddAction
+import io.legado.app.ui.main.bookshelf.style1.BookshelfOverflowAction
 import io.legado.app.ui.widget.image.CoverImageView
 
 data class BookshelfBookUi(
@@ -86,6 +107,7 @@ data class BookshelfGroupUi(
     val cover: String?
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookshelfComposeScreen(
     groupId: Long,
@@ -96,6 +118,10 @@ fun BookshelfComposeScreen(
     isGrid: Boolean,
     gridColumns: Int,
     scrollRequest: Int,
+    isRefreshing: Boolean,
+    onSearchClick: () -> Unit,
+    onAddActionClick: (BookshelfAddAction) -> Unit,
+    onOverflowActionClick: (BookshelfOverflowAction) -> Unit,
     onRefresh: () -> Unit,
     onBackToRoot: () -> Unit,
     onBookClick: (BookshelfBookUi) -> Unit,
@@ -119,38 +145,153 @@ fun BookshelfComposeScreen(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        if (books.isEmpty() && (groupId != BookGroup.IdRoot || groups.isEmpty())) {
-            BookshelfEmptyState()
-        } else if (isGrid) {
-            BookshelfGrid(
-                groupId = groupId,
-                groups = groups,
-                books = books,
-                showUnread = showUnread,
-                state = gridState,
-                gridColumns = gridColumns,
-                onRefresh = onRefresh,
-                onBackToRoot = onBackToRoot,
-                onBookClick = onBookClick,
-                onBookLongClick = onBookLongClick,
-                onGroupClick = onGroupClick,
-                onGroupLongClick = onGroupLongClick
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            if (isGrid) {
+                BookshelfGrid(
+                    groupId = groupId,
+                    groups = groups,
+                    books = books,
+                    showUnread = showUnread,
+                    state = gridState,
+                    gridColumns = gridColumns,
+                    onSearchClick = onSearchClick,
+                    onAddActionClick = onAddActionClick,
+                    onOverflowActionClick = onOverflowActionClick,
+                    onBackToRoot = onBackToRoot,
+                    onBookClick = onBookClick,
+                    onBookLongClick = onBookLongClick,
+                    onGroupClick = onGroupClick,
+                    onGroupLongClick = onGroupLongClick
+                )
+            } else {
+                BookshelfList(
+                    groupId = groupId,
+                    groups = groups,
+                    books = books,
+                    showUnread = showUnread,
+                    showLastUpdateTime = showLastUpdateTime,
+                    state = listState,
+                    onSearchClick = onSearchClick,
+                    onAddActionClick = onAddActionClick,
+                    onOverflowActionClick = onOverflowActionClick,
+                    onBackToRoot = onBackToRoot,
+                    onBookClick = onBookClick,
+                    onBookLongClick = onBookLongClick,
+                    onGroupClick = onGroupClick,
+                    onGroupLongClick = onGroupLongClick
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BookshelfFolderHeader(
+    groupId: Long,
+    groups: List<BookshelfGroupUi>,
+    onSearchClick: () -> Unit,
+    onAddActionClick: (BookshelfAddAction) -> Unit,
+    onOverflowActionClick: (BookshelfOverflowAction) -> Unit
+) {
+    val currentGroup = remember(groupId, groups) {
+        groups.firstOrNull { it.groupId == groupId }
+    }
+    var showAddMenu by remember { mutableStateOf(false) }
+    var showOverflowMenu by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 4.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.bookshelf),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold
             )
-        } else {
-            BookshelfList(
-                groupId = groupId,
-                groups = groups,
-                books = books,
-                showUnread = showUnread,
-                showLastUpdateTime = showLastUpdateTime,
-                state = listState,
-                onRefresh = onRefresh,
-                onBackToRoot = onBackToRoot,
-                onBookClick = onBookClick,
-                onBookLongClick = onBookLongClick,
-                onGroupClick = onGroupClick,
-                onGroupLongClick = onGroupLongClick
+            Text(
+                text = if (groupId == BookGroup.IdRoot) {
+                    "${groups.size} ${stringResource(R.string.group)}"
+                } else {
+                    currentGroup?.groupName.orEmpty()
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
+        }
+        IconButton(onClick = onSearchClick) {
+            Icon(
+                imageVector = Icons.Outlined.Search,
+                contentDescription = null
+            )
+        }
+        Box {
+            IconButton(onClick = { showAddMenu = true }) {
+                Icon(
+                    imageVector = Icons.Outlined.Add,
+                    contentDescription = null
+                )
+            }
+            DropdownMenu(
+                expanded = showAddMenu,
+                onDismissRequest = { showAddMenu = false }
+            ) {
+                BookshelfAddAction.entries.forEach { action ->
+                    DropdownMenuItem(
+                        text = { Text(text = stringResource(action.labelRes)) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = addActionIcon(action),
+                                contentDescription = null
+                            )
+                        },
+                        onClick = {
+                            showAddMenu = false
+                            onAddActionClick(action)
+                        }
+                    )
+                }
+            }
+        }
+        Box {
+            IconButton(onClick = { showOverflowMenu = true }) {
+                Icon(
+                    imageVector = Icons.Outlined.MoreVert,
+                    contentDescription = null
+                )
+            }
+            DropdownMenu(
+                expanded = showOverflowMenu,
+                onDismissRequest = { showOverflowMenu = false }
+            ) {
+                BookshelfOverflowAction.entries.forEach { action ->
+                    DropdownMenuItem(
+                        text = { Text(text = stringResource(action.labelRes)) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = overflowActionIcon(action),
+                                contentDescription = null
+                            )
+                        },
+                        onClick = {
+                            showOverflowMenu = false
+                            onOverflowActionClick(action)
+                        }
+                    )
+                }
+            }
         }
     }
 }
@@ -163,7 +304,9 @@ private fun BookshelfList(
     showUnread: Boolean,
     showLastUpdateTime: Boolean,
     state: androidx.compose.foundation.lazy.LazyListState,
-    onRefresh: () -> Unit,
+    onSearchClick: () -> Unit,
+    onAddActionClick: (BookshelfAddAction) -> Unit,
+    onOverflowActionClick: (BookshelfOverflowAction) -> Unit,
     onBackToRoot: () -> Unit,
     onBookClick: (BookshelfBookUi) -> Unit,
     onBookLongClick: (BookshelfBookUi) -> Unit,
@@ -177,11 +320,18 @@ private fun BookshelfList(
         verticalArrangement = Arrangement.spacedBy(LegadoPageDefaults.SectionSpacing)
     ) {
         item {
-            BookshelfActionRow(
+            BookshelfFolderHeader(
                 groupId = groupId,
-                onRefresh = onRefresh,
-                onBackToRoot = onBackToRoot
+                groups = groups,
+                onSearchClick = onSearchClick,
+                onAddActionClick = onAddActionClick,
+                onOverflowActionClick = onOverflowActionClick
             )
+        }
+        if (groupId != BookGroup.IdRoot) {
+            item {
+                BookshelfActionRow(onBackToRoot = onBackToRoot)
+            }
         }
         if (groupId == BookGroup.IdRoot && groups.isNotEmpty()) {
             item {
@@ -192,14 +342,20 @@ private fun BookshelfList(
                 )
             }
         }
-        items(books, key = { it.bookUrl }) { book ->
-            BookListCard(
-                book = book,
-                showUnread = showUnread,
-                showLastUpdateTime = showLastUpdateTime,
-                onClick = { onBookClick(book) },
-                onLongClick = { onBookLongClick(book) }
-            )
+        if (books.isEmpty()) {
+            item {
+                BookshelfInlineEmptyState()
+            }
+        } else {
+            items(books, key = { it.bookUrl }) { book ->
+                BookListCard(
+                    book = book,
+                    showUnread = showUnread,
+                    showLastUpdateTime = showLastUpdateTime,
+                    onClick = { onBookClick(book) },
+                    onLongClick = { onBookLongClick(book) }
+                )
+            }
         }
     }
 }
@@ -212,7 +368,9 @@ private fun BookshelfGrid(
     showUnread: Boolean,
     state: LazyGridState,
     gridColumns: Int,
-    onRefresh: () -> Unit,
+    onSearchClick: () -> Unit,
+    onAddActionClick: (BookshelfAddAction) -> Unit,
+    onOverflowActionClick: (BookshelfOverflowAction) -> Unit,
     onBackToRoot: () -> Unit,
     onBookClick: (BookshelfBookUi) -> Unit,
     onBookLongClick: (BookshelfBookUi) -> Unit,
@@ -228,11 +386,18 @@ private fun BookshelfGrid(
         verticalArrangement = Arrangement.spacedBy(LegadoPageDefaults.SectionSpacing)
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
-            BookshelfActionRow(
+            BookshelfFolderHeader(
                 groupId = groupId,
-                onRefresh = onRefresh,
-                onBackToRoot = onBackToRoot
+                groups = groups,
+                onSearchClick = onSearchClick,
+                onAddActionClick = onAddActionClick,
+                onOverflowActionClick = onOverflowActionClick
             )
+        }
+        if (groupId != BookGroup.IdRoot) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                BookshelfActionRow(onBackToRoot = onBackToRoot)
+            }
         }
         if (groupId == BookGroup.IdRoot && groups.isNotEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
@@ -243,44 +408,35 @@ private fun BookshelfGrid(
                 )
             }
         }
-        items(books, key = { it.bookUrl }) { book ->
-            BookGridCard(
-                book = book,
-                showUnread = showUnread,
-                onClick = { onBookClick(book) },
-                onLongClick = { onBookLongClick(book) }
-            )
+        if (books.isEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                BookshelfInlineEmptyState()
+            }
+        } else {
+            items(books, key = { it.bookUrl }) { book ->
+                BookGridCard(
+                    book = book,
+                    showUnread = showUnread,
+                    onClick = { onBookClick(book) },
+                    onLongClick = { onBookLongClick(book) }
+                )
+            }
         }
     }
 }
 
 @Composable
 internal fun BookshelfActionRow(
-    groupId: Long,
-    onRefresh: () -> Unit,
     onBackToRoot: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.End
     ) {
-        FilledTonalButton(
-            onClick = onRefresh,
-            modifier = Modifier.weight(1f)
-        ) {
-            Icon(Icons.Outlined.Refresh, contentDescription = null)
+        OutlinedButton(onClick = onBackToRoot) {
+            Icon(Icons.Outlined.SubdirectoryArrowLeft, contentDescription = null)
             Spacer(modifier = Modifier.size(8.dp))
-            Text(stringResource(R.string.update_toc))
-        }
-        if (groupId != BookGroup.IdRoot) {
-            OutlinedButton(
-                onClick = onBackToRoot,
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(Icons.Outlined.SubdirectoryArrowLeft, contentDescription = null)
-                Spacer(modifier = Modifier.size(8.dp))
-                Text(stringResource(R.string.all))
-            }
+            Text(stringResource(R.string.all))
         }
     }
 }
@@ -304,6 +460,33 @@ private fun BookshelfGroupRow(
                     onLongClick = { onGroupLongClick(group) }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun BookshelfInlineEmptyState() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 48.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.AutoStories,
+                contentDescription = null,
+                modifier = Modifier.size(44.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = stringResource(R.string.bookshelf_empty),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -584,26 +767,19 @@ private fun BookCover(
     )
 }
 
-@Composable
-internal fun BookshelfEmptyState() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = Icons.Outlined.AutoStories,
-            contentDescription = null,
-            modifier = Modifier.size(48.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = stringResource(R.string.bookshelf_empty),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
+private fun addActionIcon(action: BookshelfAddAction) = when (action) {
+    BookshelfAddAction.ImportLocal -> Icons.Outlined.LibraryAdd
+    BookshelfAddAction.AddRemote -> Icons.Outlined.CloudDownload
+    BookshelfAddAction.AddUrl -> Icons.Outlined.Source
+}
+
+private fun overflowActionIcon(action: BookshelfOverflowAction) = when (action) {
+    BookshelfOverflowAction.UpdateToc -> Icons.Outlined.Update
+    BookshelfOverflowAction.Layout -> Icons.Outlined.Widgets
+    BookshelfOverflowAction.GroupManage -> Icons.Outlined.Storage
+    BookshelfOverflowAction.BookshelfManage -> Icons.Outlined.SettingsInputComposite
+    BookshelfOverflowAction.CacheExport -> Icons.Outlined.Download
+    BookshelfOverflowAction.ExportBookshelf -> Icons.Outlined.FileDownload
+    BookshelfOverflowAction.ImportBookshelf -> Icons.Outlined.CloudDownload
+    BookshelfOverflowAction.Log -> Icons.Outlined.FindInPage
 }

@@ -151,7 +151,6 @@ object PreferKey {
     const val batchChangeSourceDelay = "batchChangeSourceDelay"
     const val openBookInfoByClickTitle = "openBookInfoByClickTitle"
     const val defaultHomePage = "defaultHomePage"
-    const val showBookshelfFastScroller = "showBookshelfFastScroller"
     const val importKeepEnable = "importKeepEnable"
     const val previewImageByClick = "previewImageByClick"
     const val keyPageOnLongPress = "keyPageOnLongPress"

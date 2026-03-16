@@ -29,7 +29,6 @@ import io.legado.app.ui.book.cache.CacheActivity
 import io.legado.app.ui.about.AppLogDialog
 import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.compose.theme.LegadoComposeTheme
-import io.legado.app.ui.main.bookshelf.BookshelfTabsMaterialScreen
 import io.legado.app.ui.main.bookshelf.BaseBookshelfFragment
 import io.legado.app.ui.main.bookshelf.style2.BookshelfBookUi
 import io.legado.app.ui.main.bookshelf.style2.BookshelfGroupUi
@@ -75,6 +74,7 @@ class BookshelfFragment1() : BaseBookshelfFragment(R.layout.fragment_bookshelf1)
     private var showLastUpdateTime by mutableStateOf(AppConfig.showLastUpdateTime)
     private var isGridLayout by mutableStateOf(AppConfig.bookshelfLayout != 0)
     private var gridColumns by mutableIntStateOf((AppConfig.bookshelfLayout + 2).coerceAtLeast(2))
+    private var isRefreshing by mutableStateOf(false)
 
     override val groupId: Long
         get() = selectedGroup?.groupId ?: BookGroup.IdAll
@@ -90,8 +90,7 @@ class BookshelfFragment1() : BaseBookshelfFragment(R.layout.fragment_bookshelf1)
     private fun initComposeContent() {
         binding.composeBookshelfContent.setContent {
             LegadoComposeTheme {
-                BookshelfTabsMaterialScreen(
-                    title = getString(R.string.bookshelf),
+                BookshelfTabsComposeScreen(
                     selectedTabIndex = selectedTabIndex.safeTabIndex(composeGroups.size),
                     groups = composeGroups,
                     books = composeBooks,
@@ -100,6 +99,7 @@ class BookshelfFragment1() : BaseBookshelfFragment(R.layout.fragment_bookshelf1)
                     isGrid = isGridLayout,
                     gridColumns = gridColumns,
                     scrollRequest = scrollRequest,
+                    isRefreshing = isRefreshing,
                     onSearchClick = {
                         startActivity<SearchActivity>()
                     },
@@ -143,6 +143,9 @@ class BookshelfFragment1() : BaseBookshelfFragment(R.layout.fragment_bookshelf1)
                             BookshelfOverflowAction.ImportBookshelf -> importBookshelfAlert(groupId)
                             BookshelfOverflowAction.Log -> showDialogFragment<AppLogDialog>()
                         }
+                    },
+                    onRefresh = {
+                        refreshBooks()
                     },
                     onTabClick = ::onTabSelected,
                     onTabLongClick = { group ->
@@ -266,12 +269,25 @@ class BookshelfFragment1() : BaseBookshelfFragment(R.layout.fragment_bookshelf1)
         }
     }
 
+    private fun refreshBooks() {
+        val refreshableBooks = books.filter { !it.isLocal && it.canUpdate }
+        if (refreshableBooks.isEmpty()) {
+            isRefreshing = false
+            return
+        }
+        isRefreshing = true
+        activityViewModel.upToc(refreshableBooks)
+    }
+
     override fun gotoTop() {
         scrollRequest++
     }
 
     override fun observeLiveBus() {
         super.observeLiveBus()
+        activityViewModel.onUpBooksLiveData.observe(this) {
+            isRefreshing = it > 0
+        }
         observeEvent<String>(EventBus.UP_BOOKSHELF) {
             refreshUpdatingState()
         }

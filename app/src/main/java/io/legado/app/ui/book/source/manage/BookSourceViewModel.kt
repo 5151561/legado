@@ -54,17 +54,6 @@ class BookSourceViewModel(application: Application) : BaseViewModel(application)
         }
     }
 
-    fun update(vararg bookSource: BookSource) {
-        execute { appDb.bookSourceDao.update(*bookSource) }
-    }
-
-    fun upOrder(items: List<BookSourcePart>) {
-        if (items.isEmpty()) return
-        execute {
-            appDb.bookSourceDao.upOrder(items)
-        }
-    }
-
     fun enable(enable: Boolean, items: List<BookSourcePart>) {
         execute {
             appDb.bookSourceDao.enable(enable, items)
@@ -136,31 +125,6 @@ class BookSourceViewModel(application: Application) : BaseViewModel(application)
             success.invoke(it)
         }.onError {
             context.toastOnUi(it.stackTraceStr)
-        }
-    }
-
-    fun saveToFile(
-        adapter: BookSourceAdapter,
-        searchKey: String?,
-        sortAscending: Boolean,
-        sort: BookSourceSort,
-        success: (file: File) -> Unit
-    ) {
-        execute {
-            val selection = adapter.selection
-            val selectedRate = selection.size.toFloat() / adapter.itemCount.toFloat()
-            val sources = if (selectedRate == 1f) {
-                getBookSources(searchKey, sortAscending, sort)
-            } else if (selectedRate < 0.3) {
-                selection.toBookSource()
-            } else {
-                val keys = selection.map { it.bookSourceUrl }.toHashSet()
-                val bookSources = getBookSources(searchKey, sortAscending, sort)
-                bookSources.filter {
-                    keys.contains(it.bookSourceUrl)
-                }
-            }
-            saveToFile(sources, success)
         }
     }
 
