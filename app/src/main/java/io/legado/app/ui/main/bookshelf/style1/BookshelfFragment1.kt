@@ -19,8 +19,17 @@ import io.legado.app.databinding.FragmentBookshelf1Binding
 import io.legado.app.help.book.isLocal
 import io.legado.app.help.config.AppConfig
 import io.legado.app.ui.book.group.GroupEditDialog
+import io.legado.app.ui.book.group.GroupManageDialog
 import io.legado.app.ui.book.info.BookInfoActivity
+import io.legado.app.ui.book.import.local.ImportBookActivity
+import io.legado.app.ui.book.import.remote.RemoteBookActivity
+import io.legado.app.ui.book.manage.BookshelfManageActivity
+import io.legado.app.ui.book.search.SearchActivity
+import io.legado.app.ui.book.cache.CacheActivity
+import io.legado.app.ui.about.AppLogDialog
+import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.compose.theme.LegadoComposeTheme
+import io.legado.app.ui.main.bookshelf.BookshelfTabsMaterialScreen
 import io.legado.app.ui.main.bookshelf.BaseBookshelfFragment
 import io.legado.app.ui.main.bookshelf.style2.BookshelfBookUi
 import io.legado.app.ui.main.bookshelf.style2.BookshelfGroupUi
@@ -74,7 +83,6 @@ class BookshelfFragment1() : BaseBookshelfFragment(R.layout.fragment_bookshelf1)
         get() = booksMap.values.toList()
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
-        setSupportToolbar(binding.titleBar.toolbar)
         initComposeContent()
         initBookGroupData()
     }
@@ -82,7 +90,8 @@ class BookshelfFragment1() : BaseBookshelfFragment(R.layout.fragment_bookshelf1)
     private fun initComposeContent() {
         binding.composeBookshelfContent.setContent {
             LegadoComposeTheme {
-                BookshelfTabsComposeScreen(
+                BookshelfTabsMaterialScreen(
+                    title = getString(R.string.bookshelf),
                     selectedTabIndex = selectedTabIndex.safeTabIndex(composeGroups.size),
                     groups = composeGroups,
                     books = composeBooks,
@@ -91,7 +100,50 @@ class BookshelfFragment1() : BaseBookshelfFragment(R.layout.fragment_bookshelf1)
                     isGrid = isGridLayout,
                     gridColumns = gridColumns,
                     scrollRequest = scrollRequest,
-                    onRefresh = { selectedGroup?.let { group -> refreshGroupBooks(group) } },
+                    onSearchClick = {
+                        startActivity<SearchActivity>()
+                    },
+                    onAddActionClick = { action ->
+                        when (action) {
+                            BookshelfAddAction.ImportLocal -> startActivity<ImportBookActivity>()
+                            BookshelfAddAction.AddRemote -> startActivity<RemoteBookActivity>()
+                            BookshelfAddAction.AddUrl -> showAddBookByUrlAlert()
+                        }
+                    },
+                    onOverflowActionClick = { action ->
+                        when (action) {
+                            BookshelfOverflowAction.UpdateToc -> activityViewModel.upToc(books)
+                            BookshelfOverflowAction.Layout -> configBookshelf()
+                            BookshelfOverflowAction.GroupManage -> showDialogFragment<GroupManageDialog>()
+                            BookshelfOverflowAction.BookshelfManage -> {
+                                startActivity<BookshelfManageActivity> {
+                                    putExtra("groupId", groupId)
+                                }
+                            }
+
+                            BookshelfOverflowAction.CacheExport -> {
+                                startActivity<CacheActivity> {
+                                    putExtra("groupId", groupId)
+                                }
+                            }
+
+                            BookshelfOverflowAction.ExportBookshelf -> {
+                                viewModel.exportBookshelf(books) { file ->
+                                    exportBookshelfResult.launch {
+                                        mode = HandleFileContract.EXPORT
+                                        fileData = HandleFileContract.FileData(
+                                            "bookshelf.json",
+                                            file,
+                                            "application/json"
+                                        )
+                                    }
+                                }
+                            }
+
+                            BookshelfOverflowAction.ImportBookshelf -> importBookshelfAlert(groupId)
+                            BookshelfOverflowAction.Log -> showDialogFragment<AppLogDialog>()
+                        }
+                    },
                     onTabClick = ::onTabSelected,
                     onTabLongClick = { group ->
                         bookGroups.firstOrNull { it.groupId == group.groupId }?.let {
@@ -151,6 +203,7 @@ class BookshelfFragment1() : BaseBookshelfFragment(R.layout.fragment_bookshelf1)
         }
         selectedTabIndex = index
         AppConfig.saveTabPosition = index
+        scrollRequest++
         refreshSelectedTabBooks()
     }
 

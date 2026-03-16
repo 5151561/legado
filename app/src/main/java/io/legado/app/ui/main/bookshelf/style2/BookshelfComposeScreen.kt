@@ -28,9 +28,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoStories
+import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.BookmarkAdded
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.SubdirectoryArrowLeft
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -319,26 +321,28 @@ internal fun BookListCard(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(22.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+        shape = RoundedCornerShape(18.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             BookCover(
                 cover = book.cover,
                 name = book.name,
                 author = book.author,
                 sourceOrigin = book.origin,
-                modifier = Modifier.size(width = 78.dp, height = 109.dp)
+                modifier = Modifier.size(width = 92.dp, height = 128.dp)
             )
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -347,8 +351,9 @@ internal fun BookListCard(
                     Text(
                         text = book.name,
                         modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                     BookStatusBadge(
@@ -358,18 +363,14 @@ internal fun BookListCard(
                         highlight = book.lastCheckCount > 0
                     )
                 }
-                Text(
-                    text = stringResource(R.string.author_show, book.author),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                InfoLine(
+                    icon = Icons.Outlined.PersonOutline,
+                    text = stringResource(R.string.author_show, book.author)
                 )
                 if (showLastUpdateTime && !book.isLocal) {
-                    Text(
+                    InfoLine(
+                        icon = Icons.Outlined.Schedule,
                         text = DateUtils.getRelativeTimeSpanString(book.latestChapterTime).toString(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary
                     )
                 }
                 InfoLine(
@@ -403,9 +404,11 @@ internal fun BookGridCard(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(22.dp)
+        shape = RoundedCornerShape(18.dp)
     ) {
         Column(
             modifier = Modifier
@@ -568,9 +571,7 @@ private fun BookCover(
 ) {
     AndroidView(
         modifier = modifier.clip(RoundedCornerShape(18.dp)),
-        factory = { context ->
-            CoverImageView(context)
-        },
+        factory = { context -> CoverImageView(context) },
         update = { view ->
             view.load(
                 path = cover,

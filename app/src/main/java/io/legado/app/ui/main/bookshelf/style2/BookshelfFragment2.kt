@@ -22,6 +22,7 @@ import io.legado.app.help.config.AppConfig
 import io.legado.app.ui.book.group.GroupEditDialog
 import io.legado.app.ui.book.info.BookInfoActivity
 import io.legado.app.ui.compose.theme.LegadoComposeTheme
+import io.legado.app.ui.main.bookshelf.BookshelfGroupMaterialScreen
 import io.legado.app.ui.main.bookshelf.BaseBookshelfFragment
 import io.legado.app.utils.flowWithLifecycleAndDatabaseChangeFirst
 import io.legado.app.utils.observeEvent
@@ -67,9 +68,9 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
     private var showLastUpdateTime by mutableStateOf(AppConfig.showLastUpdateTime)
     private var isGridLayout by mutableStateOf(AppConfig.bookshelfLayout != 0)
     private var gridColumns by mutableIntStateOf((AppConfig.bookshelfLayout + 2).coerceAtLeast(2))
+    private var composeTitle by mutableStateOf("")
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
-        setSupportToolbar(binding.titleBar.toolbar)
         initComposeContent()
         initBookGroupData()
         initBooksData()
@@ -78,7 +79,8 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
     private fun initComposeContent() {
         binding.composeBookshelfContent.setContent {
             LegadoComposeTheme {
-                BookshelfComposeScreen(
+                BookshelfGroupMaterialScreen(
+                    title = composeTitle,
                     groupId = composeGroupId,
                     groups = composeGroups,
                     books = composeBooks,
@@ -190,11 +192,11 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
 
     private fun updateTitle() {
         if (groupId == BookGroup.IdRoot) {
-            binding.titleBar.title = getString(R.string.bookshelf)
+            composeTitle = getString(R.string.bookshelf)
             enableRefresh = true
         } else {
             bookGroups.firstOrNull { it.groupId == groupId }?.let {
-                binding.titleBar.title = "${getString(R.string.bookshelf)}(${it.groupName})"
+                composeTitle = it.groupName
                 enableRefresh = it.enableRefresh
             }
         }

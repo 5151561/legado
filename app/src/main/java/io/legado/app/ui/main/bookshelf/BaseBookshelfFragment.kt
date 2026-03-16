@@ -73,6 +73,10 @@ abstract class BaseBookshelfFragment(layoutId: Int) : VMBaseFragment<BookshelfVi
             }
         }
     }
+    protected val importBookshelfResult
+        get() = importBookshelf
+    protected val exportBookshelfResult
+        get() = exportResult
     abstract val groupId: Long
     abstract val books: List<Book>
     private var groupsLiveData: LiveData<List<BookGroup>>? = null
@@ -239,7 +243,7 @@ abstract class BaseBookshelfFragment(layoutId: Int) : VMBaseFragment<BookshelfVi
     }
 
 
-    private fun importBookshelfAlert(groupId: Long) {
+    protected fun importBookshelfAlert(groupId: Long) {
         alert(titleResource = R.string.import_bookshelf) {
             val alertBinding = DialogEditTextBinding.inflate(layoutInflater).apply {
                 editView.hint = "url/json"

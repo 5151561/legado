@@ -2,46 +2,51 @@
 
 package io.legado.app.ui.book.toc
 
+import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
 import androidx.activity.viewModels
-import androidx.appcompat.widget.SearchView
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentPagerAdapter
-import com.google.android.material.tabs.TabLayout
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.lifecycleScope
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
+import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
+import io.legado.app.data.entities.Bookmark
 import io.legado.app.databinding.ActivityChapterListBinding
-import io.legado.app.help.book.isLocalTxt
+import io.legado.app.help.book.ContentProcessor
+import io.legado.app.help.book.simulatedTotalChapterNum
 import io.legado.app.help.config.AppConfig
-import io.legado.app.lib.theme.accentColor
-import io.legado.app.lib.theme.primaryTextColor
-import io.legado.app.model.ReadBook
 import io.legado.app.ui.about.AppLogDialog
+import io.legado.app.ui.book.bookmark.BookmarkDialog
 import io.legado.app.ui.book.toc.rule.TxtTocRuleDialog
+import io.legado.app.ui.compose.theme.LegadoComposeTheme
 import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.widget.dialog.WaitDialog
-import io.legado.app.utils.applyTint
-import io.legado.app.utils.gone
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.viewbindingdelegate.viewBinding
-import io.legado.app.utils.visible
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-/**
- * 目录
- */
 class TocActivity : VMBaseActivity<ActivityChapterListBinding, TocViewModel>(),
     TxtTocRuleDialog.CallBack {
 
     override val binding by viewBinding(ActivityChapterListBinding::inflate)
     override val viewModel by viewModels<TocViewModel>()
 
-    private lateinit var tabLayout: TabLayout
-    private var menu: Menu? = null
-    private var searchView: SearchView? = null
+    private var query by mutableStateOf("")
+    private var activeTab by mutableIntStateOf(0)
+    private var overflowExpanded by mutableStateOf(false)
+    private var chapterItems by mutableStateOf<List<TocChapterUi>>(emptyList())
+    private var bookmarkItems by mutableStateOf<List<Bookmark>>(emptyList())
+    private var bookmarkJob: Job? = null
     private val waitDialog by lazy { WaitDialog(this) }
     private val exportDir = registerForActivityResult(HandleFileContract()) {
         it.uri?.let { uri ->
@@ -53,121 +58,104 @@ class TocActivity : VMBaseActivity<ActivityChapterListBinding, TocViewModel>(),
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
-        tabLayout = binding.titleBar.findViewById(R.id.tab_layout)
-        tabLayout.isTabIndicatorFullWidth = false
-        tabLayout.setSelectedTabIndicatorColor(accentColor)
-        binding.viewPager.adapter = TabFragmentPageAdapter()
-        tabLayout.setupWithViewPager(binding.viewPager)
-        tabLayout.tabGravity = TabLayout.GRAVITY_CENTER
-        viewModel.bookData.observe(this) {
-            menu?.setGroupVisible(R.id.menu_group_text, it.isLocalTxt)
-        }
-        intent.getStringExtra("bookUrl")?.let {
-            viewModel.initBook(it)
-        }
-    }
-
-    override fun onCompatCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.book_toc, menu)
-        this.menu = menu
-        val search = menu.findItem(R.id.menu_search)
-        searchView = (search.actionView as SearchView).apply {
-            applyTint(primaryTextColor)
-            maxWidth = resources.displayMetrics.widthPixels
-            onActionViewCollapsed()
-            setOnCloseListener {
-                tabLayout.visible()
-                false
-            }
-            setOnSearchClickListener { tabLayout.gone() }
-            setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-                override fun onQueryTextSubmit(query: String): Boolean {
-                    viewModel.searchKey = query
-                    return false
-                }
-
-                override fun onQueryTextChange(newText: String): Boolean {
-                    viewModel.searchKey = newText
-                    if (tabLayout.selectedTabPosition == 1) {
-                        viewModel.startBookmarkSearch(newText)
-                    } else {
-                        viewModel.startChapterListSearch(newText)
+        binding.composeTocContent.setContent {
+            LegadoComposeTheme {
+                TocMaterialScreen(
+                    query = query,
+                    activeTab = activeTab,
+                    chapterItems = chapterItems,
+                    bookmarkItems = bookmarkItems,
+                    currentProgress = progressLabel(),
+                    overflowExpanded = overflowExpanded,
+                    useReplace = AppConfig.tocUiUseReplace,
+                    loadWordCount = AppConfig.tocCountWords,
+                    splitLongChapter = viewModel.bookData.value?.getSplitLongChapter() == true,
+                    onBack = ::finish,
+                    onQueryChange = {
+                        query = it
+                        refreshComposeData()
+                    },
+                    onTabSelected = { index ->
+                        activeTab = index
+                        refreshComposeData()
+                    },
+                    onOverflowClick = { overflowExpanded = true },
+                    onOverflowDismiss = { overflowExpanded = false },
+                    onReverseToc = {
+                        overflowExpanded = false
+                        viewModel.reverseToc { book ->
+                            refreshComposeData()
+                            setResult(RESULT_OK, Intent().apply {
+                                putExtra("index", book.durChapterIndex)
+                                putExtra("chapterPos", 0)
+                            })
+                        }
+                    },
+                    onToggleUseReplace = {
+                        overflowExpanded = false
+                        AppConfig.tocUiUseReplace = !AppConfig.tocUiUseReplace
+                        refreshChapters()
+                    },
+                    onToggleLoadWordCount = {
+                        overflowExpanded = false
+                        AppConfig.tocCountWords = !AppConfig.tocCountWords
+                        refreshChapters()
+                    },
+                    onToggleSplitLongChapter = {
+                        overflowExpanded = false
+                        viewModel.bookData.value?.let { book ->
+                            book.setSplitLongChapter(!book.getSplitLongChapter())
+                            upBookAndToc(book)
+                        }
+                    },
+                    onShowTocRegex = {
+                        overflowExpanded = false
+                        showDialogFragment(TxtTocRuleDialog(viewModel.bookData.value?.tocUrl))
+                    },
+                    onExportBookmark = {
+                        overflowExpanded = false
+                        exportDir.launch { requestCode = 1 }
+                    },
+                    onExportBookmarkMd = {
+                        overflowExpanded = false
+                        exportDir.launch { requestCode = 2 }
+                    },
+                    onShowLog = {
+                        overflowExpanded = false
+                        showDialogFragment<AppLogDialog>()
+                    },
+                    onChapterClick = { item ->
+                        setResult(
+                            RESULT_OK,
+                            Intent()
+                                .putExtra("index", item.index)
+                                .putExtra(
+                                    "chapterChanged",
+                                    item.index != viewModel.bookData.value?.durChapterIndex
+                                )
+                        )
+                        finish()
+                    },
+                    onBookmarkClick = { bookmark ->
+                        setResult(
+                            RESULT_OK,
+                            Intent().apply {
+                                putExtra("index", bookmark.chapterIndex)
+                                putExtra("chapterPos", bookmark.chapterPos)
+                            }
+                        )
+                        finish()
+                    },
+                    onBookmarkLongClick = { bookmark, index ->
+                        showDialogFragment(BookmarkDialog(bookmark, index))
                     }
-                    return false
-                }
-            })
-            setOnQueryTextFocusChangeListener { _, hasFocus ->
-                if (!hasFocus) {
-                    searchView?.isIconified = true
-                }
+                )
             }
         }
-        return super.onCompatCreateOptionsMenu(menu)
-    }
-
-    override fun onMenuOpened(featureId: Int, menu: Menu): Boolean {
-        if (tabLayout.selectedTabPosition == 1) {
-            menu.setGroupVisible(R.id.menu_group_bookmark, true)
-            menu.setGroupVisible(R.id.menu_group_toc, false)
-            menu.setGroupVisible(R.id.menu_group_text, false)
-        } else {
-            menu.setGroupVisible(R.id.menu_group_bookmark, false)
-            menu.setGroupVisible(R.id.menu_group_toc, true)
-            menu.setGroupVisible(R.id.menu_group_text, viewModel.bookData.value?.isLocalTxt == true)
+        viewModel.bookData.observe(this) {
+            refreshComposeData()
         }
-        menu.findItem(R.id.menu_use_replace)?.isChecked =
-            AppConfig.tocUiUseReplace
-        menu.findItem(R.id.menu_load_word_count)?.isChecked =
-            AppConfig.tocCountWords
-        menu.findItem(R.id.menu_split_long_chapter)?.isChecked =
-            viewModel.bookData.value?.getSplitLongChapter() == true
-        return super.onMenuOpened(featureId, menu)
-    }
-
-    override fun onCompatOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.menu_toc_regex -> showDialogFragment(
-                TxtTocRuleDialog(viewModel.bookData.value?.tocUrl)
-            )
-
-            R.id.menu_split_long_chapter -> {
-                viewModel.bookData.value?.let { book ->
-                    item.isChecked = !item.isChecked
-                    book.setSplitLongChapter(item.isChecked)
-                    upBookAndToc(book)
-                }
-            }
-
-            R.id.menu_reverse_toc -> viewModel.reverseToc {
-                viewModel.chapterListCallBack?.upChapterList(searchView?.query?.toString())
-                setResult(RESULT_OK, Intent().apply {
-                    putExtra("index", it.durChapterIndex)
-                    putExtra("chapterPos", 0)
-                })
-            }
-
-            R.id.menu_use_replace -> {
-                AppConfig.tocUiUseReplace = !item.isChecked
-                viewModel.chapterListCallBack?.clearDisplayTitle()
-                viewModel.chapterListCallBack?.upChapterList(searchView?.query?.toString())
-            }
-
-            R.id.menu_load_word_count -> {
-                AppConfig.tocCountWords = !item.isChecked
-                viewModel.upChapterListAdapter()
-            }
-
-            R.id.menu_export_bookmark -> exportDir.launch {
-                requestCode = 1
-            }
-
-            R.id.menu_export_md -> exportDir.launch {
-                requestCode = 2
-            }
-
-            R.id.menu_log -> showDialogFragment<AppLogDialog>()
-        }
-        return super.onCompatOptionsItemSelected(item)
+        intent.getStringExtra("bookUrl")?.let(viewModel::initBook)
     }
 
     override fun onTocRegexDialogResult(tocRegex: String) {
@@ -177,42 +165,76 @@ class TocActivity : VMBaseActivity<ActivityChapterListBinding, TocViewModel>(),
         }
     }
 
-    private fun upBookAndToc(book: Book) {
-        waitDialog.show()
-        viewModel.upBookTocRule(book) {
-            waitDialog.dismiss()
-            if (ReadBook.book == book) {
-                if (it == null) {
-                    ReadBook.upMsg(null)
+    private fun refreshComposeData() {
+        refreshChapters()
+        refreshBookmarks()
+    }
+
+    private fun refreshChapters() {
+        val book = viewModel.bookData.value ?: return
+        lifecycleScope.launch {
+            chapterItems = withContext(IO) {
+                val end = (book.simulatedTotalChapterNum() - 1).coerceAtLeast(0)
+                val rawChapters = if (query.isBlank()) {
+                    appDb.bookChapterDao.getChapterList(viewModel.bookUrl, 0, end)
                 } else {
-                    ReadBook.upMsg("LoadTocError:${it.localizedMessage}")
+                    appDb.bookChapterDao.search(viewModel.bookUrl, query, 0, end)
+                }
+                val useReplace = AppConfig.tocUiUseReplace && book.getUseReplaceRule()
+                val replaceRules = if (useReplace) {
+                    ContentProcessor.get(book.name, book.origin).getTitleReplaceRules()
+                } else {
+                    null
+                }
+                rawChapters.map { chapter ->
+                    val meta = buildList {
+                        if (AppConfig.tocCountWords && !chapter.wordCount.isNullOrBlank()) {
+                            add(chapter.wordCount.orEmpty())
+                        }
+                        if (!chapter.tag.isNullOrBlank()) {
+                            add(chapter.tag.orEmpty())
+                        }
+                        if (chapter.isVip && !chapter.isPay) {
+                            add("需登录/未购买")
+                        }
+                    }.joinToString(" · ")
+                    TocChapterUi(
+                        index = chapter.index,
+                        title = chapter.getDisplayTitle(replaceRules, useReplace),
+                        meta = if (meta.isBlank()) "第${chapter.index + 1}章" else meta,
+                        isCurrent = chapter.index == book.durChapterIndex,
+                        isLocked = chapter.isVip && !chapter.isPay
+                    )
                 }
             }
         }
     }
 
-    @Suppress("DEPRECATION")
-    private inner class TabFragmentPageAdapter :
-        FragmentPagerAdapter(supportFragmentManager, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT) {
-
-        override fun getItem(position: Int): Fragment {
-            return when (position) {
-                1 -> BookmarkFragment()
-                else -> ChapterListFragment()
+    private fun refreshBookmarks() {
+        bookmarkJob?.cancel()
+        val book = viewModel.bookData.value ?: return
+        bookmarkJob = lifecycleScope.launch {
+            val flow = if (query.isBlank()) {
+                appDb.bookmarkDao.flowByBook(book.name, book.author)
+            } else {
+                appDb.bookmarkDao.flowSearch(book.name, book.author, query)
             }
+            flow.catch { bookmarkItems = emptyList() }
+                .flowOn(IO)
+                .collect { bookmarkItems = it }
         }
-
-        override fun getCount(): Int {
-            return 2
-        }
-
-        override fun getPageTitle(position: Int): CharSequence {
-            return when (position) {
-                1 -> getString(R.string.bookmark)
-                else -> getString(R.string.chapter_list)
-            }
-        }
-
     }
 
+    private fun progressLabel(): String {
+        val book = viewModel.bookData.value ?: return ""
+        return "${book.durChapterTitle}(${book.durChapterIndex + 1}/${book.simulatedTotalChapterNum()})"
+    }
+
+    private fun upBookAndToc(book: Book) {
+        waitDialog.show()
+        viewModel.upBookTocRule(book) {
+            waitDialog.dismiss()
+            refreshComposeData()
+        }
+    }
 }
