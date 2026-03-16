@@ -12,8 +12,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -34,11 +34,12 @@ fun LegadoOneUIScaffold(
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable (PaddingValues) -> Unit
 ) {
-    val configuration = LocalConfiguration.current
     val density = LocalDensity.current
+    val windowInfo = LocalWindowInfo.current
     
-    // 设置最大高度为屏幕高度的 40% (约 2/5)，方便单手操作
-    val headerMaxHeight = (configuration.screenHeightDp * 0.4f).dp
+    // 设置最大高度为容器高度的 40% (约 2/5)，方便单手操作
+    val containerHeightDp = with(density) { windowInfo.containerSize.height.toDp() }
+    val headerMaxHeight = containerHeightDp * 0.4f
     val headerMinHeight = 64.dp
     val maxOffsetPx = with(density) { (headerMaxHeight - headerMinHeight).toPx() }
 
