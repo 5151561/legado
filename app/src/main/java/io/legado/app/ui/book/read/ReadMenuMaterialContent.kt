@@ -31,7 +31,6 @@ import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.FormatSize
 import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
@@ -238,7 +237,10 @@ internal fun ReadMenuMaterialContent(
                                         style = MaterialTheme.typography.bodySmall,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.clickable { onChapterNameClick() }
+                                        modifier = Modifier.combinedClickable(
+                                            onClick = onChapterNameClick,
+                                            onLongClick = onChapterNameLongClick
+                                        )
                                     )
                                 }
                                 state.chapterUrl?.let {
@@ -248,7 +250,10 @@ internal fun ReadMenuMaterialContent(
                                         style = MaterialTheme.typography.labelSmall,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.clickable { onChapterNameClick() }
+                                        modifier = Modifier.combinedClickable(
+                                            onClick = onChapterNameClick,
+                                            onLongClick = onChapterNameLongClick
+                                        )
                                     )
                                 }
                             }

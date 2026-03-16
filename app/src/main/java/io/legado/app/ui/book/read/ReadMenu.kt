@@ -2,9 +2,9 @@ package io.legado.app.ui.book.read
 
 import android.content.Context
 import android.util.AttributeSet
-import android.view.View
 import android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
 import android.widget.FrameLayout
+import androidx.core.graphics.toColorInt
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -133,7 +133,7 @@ class ReadMenu @JvmOverloads constructor(
             composeView,
             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
         )
-        visibility = View.GONE
+        visibility = GONE
         upBrightnessState()
         syncUiState()
     }
@@ -143,8 +143,8 @@ class ReadMenu @JvmOverloads constructor(
 
     private fun containerColorInt(): Int {
         return if (immersiveMenu) {
-            kotlin.runCatching {
-                android.graphics.Color.parseColor(ReadBookConfig.durConfig.curBgStr())
+            runCatching {
+                ReadBookConfig.durConfig.curBgStr().toColorInt()
             }.getOrDefault(context.bottomBackground)
         } else {
             context.bottomBackground
@@ -194,8 +194,9 @@ class ReadMenu @JvmOverloads constructor(
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun runMenuIn(anim: Boolean = !AppConfig.isEInkMode) {
-        visibility = View.VISIBLE
+        visibility = VISIBLE
         callBack.onMenuShow()
         canShowMenu = false
         overflowVisible = false
@@ -215,10 +216,10 @@ class ReadMenu @JvmOverloads constructor(
         syncUiState(visible = false)
         postDelayed({
             if (!uiState.visible) {
-                visibility = View.INVISIBLE
+                visibility = INVISIBLE
                 canShowMenu = false
                 isMenuOutAnimating = false
-                this.onMenuOutEnd?.invoke()
+                onMenuOutEnd?.invoke()
                 callBack.upSystemUiVisibility()
             }
         }, if (anim) 220L else 0L)
