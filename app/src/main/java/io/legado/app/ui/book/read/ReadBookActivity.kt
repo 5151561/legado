@@ -635,6 +635,15 @@ class ReadBookActivity : BaseReadBookActivity(),
         return onCompatOptionsItemSelected(item)
     }
 
+    override fun dispatchReadMenuAction(itemId: Int) {
+        val targetItem = menu?.findItem(itemId) ?: PopupMenu(this, binding.readView).menu.apply {
+            menuInflater.inflate(R.menu.book_read, this)
+            menuInflater.inflate(R.menu.book_read_change_source, this)
+            menuInflater.inflate(R.menu.book_read_refresh, this)
+        }.findItem(itemId)
+        targetItem?.let(::onCompatOptionsItemSelected)
+    }
+
     /**
      * 按键拦截,显示菜单
      */

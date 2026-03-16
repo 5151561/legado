@@ -40,9 +40,11 @@ import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material.icons.rounded.WbSunny
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -85,11 +87,23 @@ internal data class ReadMenuSourceAction(
     val onClick: () -> Unit
 )
 
+internal data class ReadMenuOverflowAction(
+    val label: String,
+    val supportingText: String? = null,
+    val enabled: Boolean = true,
+    val onClick: () -> Unit
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ReadMenuMaterialContent(
     state: ReadMenuUiState,
     sourceActions: List<ReadMenuSourceAction>,
+    overflowActions: List<ReadMenuOverflowAction>,
+    overflowVisible: Boolean,
     onDismiss: () -> Unit,
+    onOverflowClick: () -> Unit,
+    onOverflowDismiss: () -> Unit,
     onTitleClick: () -> Unit,
     onChapterNameClick: () -> Unit,
     onChapterNameLongClick: () -> Unit,
@@ -118,6 +132,56 @@ internal fun ReadMenuMaterialContent(
     val iconBackground = state.contentColor.copy(alpha = 0.12f)
 
     Box(modifier = Modifier.fillMaxSize()) {
+        if (overflowVisible) {
+            ModalBottomSheet(
+                onDismissRequest = onOverflowDismiss,
+                containerColor = bottomColor
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "阅读菜单",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = textColor
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    overflowActions.forEach { action ->
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = Color.Transparent,
+                            onClick = {
+                                if (action.enabled) {
+                                    onOverflowDismiss()
+                                    action.onClick()
+                                }
+                            },
+                            enabled = action.enabled
+                        ) {
+                            Column(modifier = Modifier.padding(vertical = 14.dp)) {
+                                Text(
+                                    text = action.label,
+                                    color = if (action.enabled) textColor else textColor.copy(alpha = 0.38f),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                action.supportingText?.let {
+                                    Text(
+                                        text = it,
+                                        color = textColor.copy(alpha = 0.7f),
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
+        }
+
         if (state.visible) {
             Box(
                 modifier = Modifier
@@ -236,6 +300,13 @@ internal fun ReadMenuMaterialContent(
                                     }
                                 }
                             }
+                        }
+                        IconButton(onClick = onOverflowClick) {
+                            Icon(
+                                Icons.Rounded.MoreVert,
+                                contentDescription = null,
+                                tint = textColor
+                            )
                         }
                     }
                 }

@@ -13,6 +13,10 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import io.legado.app.R
 import io.legado.app.constant.PreferKey
+import io.legado.app.help.AppWebDav
+import io.legado.app.help.book.isEpub
+import io.legado.app.help.book.isLocal
+import io.legado.app.help.book.isLocalTxt
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.LocalConfig
 import io.legado.app.help.config.ReadBookConfig
@@ -43,6 +47,7 @@ class ReadMenu @JvmOverloads constructor(
     private var onMenuOutEnd: (() -> Unit)? = null
     private var confirmSkipToChapter: Boolean = false
     private var autoPageEnabled: Boolean = false
+    private var overflowVisible by mutableStateOf(false)
 
     private val composeView = ComposeView(context).apply {
         setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
@@ -51,7 +56,11 @@ class ReadMenu @JvmOverloads constructor(
                 ReadMenuMaterialContent(
                     state = uiState,
                     sourceActions = sourceActions(),
+                    overflowActions = overflowActions(),
+                    overflowVisible = overflowVisible,
                     onDismiss = { runMenuOut() },
+                    onOverflowClick = { overflowVisible = true },
+                    onOverflowDismiss = { overflowVisible = false },
                     onTitleClick = { callBack.openBookInfoActivity() },
                     onChapterNameClick = ::openChapterLink,
                     onChapterNameLongClick = ::showChapterLinkModeDialog,
@@ -189,6 +198,7 @@ class ReadMenu @JvmOverloads constructor(
         visibility = View.VISIBLE
         callBack.onMenuShow()
         canShowMenu = false
+        overflowVisible = false
         syncUiState(visible = true)
         callBack.upSystemUiVisibility()
         if (!LocalConfig.readMenuHelpVersionIsLast) {
@@ -201,6 +211,7 @@ class ReadMenu @JvmOverloads constructor(
         isMenuOutAnimating = true
         callBack.onMenuHide()
         this.onMenuOutEnd = onMenuOutEnd
+        overflowVisible = false
         syncUiState(visible = false)
         postDelayed({
             if (!uiState.visible) {
@@ -353,6 +364,105 @@ class ReadMenu @JvmOverloads constructor(
         return actions
     }
 
+    private fun overflowActions(): List<ReadMenuOverflowAction> {
+        val book = ReadBook.book ?: return emptyList()
+        val online = !book.isLocal
+        val actions = mutableListOf<ReadMenuOverflowAction>()
+        if (online) {
+            actions += ReadMenuOverflowAction(
+                label = context.getString(R.string.change_origin),
+                supportingText = context.getString(R.string.book_change_source)
+            ) { callBack.dispatchReadMenuAction(R.id.menu_book_change_source) }
+            actions += ReadMenuOverflowAction(
+                label = context.getString(R.string.chapter_change_source)
+            ) { callBack.dispatchReadMenuAction(R.id.menu_chapter_change_source) }
+            actions += ReadMenuOverflowAction(
+                label = context.getString(R.string.refresh),
+                supportingText = context.getString(R.string.menu_refresh_dur)
+            ) { callBack.dispatchReadMenuAction(R.id.menu_refresh_dur) }
+            actions += ReadMenuOverflowAction(
+                label = context.getString(R.string.menu_refresh_after)
+            ) { callBack.dispatchReadMenuAction(R.id.menu_refresh_after) }
+            actions += ReadMenuOverflowAction(
+                label = context.getString(R.string.menu_refresh_all)
+            ) { callBack.dispatchReadMenuAction(R.id.menu_refresh_all) }
+            actions += ReadMenuOverflowAction(
+                label = context.getString(R.string.offline_cache)
+            ) { callBack.dispatchReadMenuAction(R.id.menu_download) }
+            actions += ReadMenuOverflowAction(
+                label = context.getString(R.string.get_book_progress),
+                enabled = ReadBook.inBookshelf && AppWebDav.isOk
+            ) { callBack.dispatchReadMenuAction(R.id.menu_get_progress) }
+            actions += ReadMenuOverflowAction(
+                label = context.getString(R.string.cover_book_progress),
+                enabled = ReadBook.inBookshelf && AppWebDav.isOk
+            ) { callBack.dispatchReadMenuAction(R.id.menu_cover_progress) }
+            actions += ReadMenuOverflowAction(
+                label = context.getString(R.string.reverse_content)
+            ) { callBack.dispatchReadMenuAction(R.id.menu_reverse_content) }
+        }
+        if (book.isLocalTxt) {
+            actions += ReadMenuOverflowAction(
+                label = context.getString(R.string.txt_toc_rule)
+            ) { callBack.dispatchReadMenuAction(R.id.menu_toc_regex) }
+        }
+        if (book.isLocal) {
+            actions += ReadMenuOverflowAction(
+                label = context.getString(R.string.set_charset)
+            ) { callBack.dispatchReadMenuAction(R.id.menu_set_charset) }
+        }
+        actions += ReadMenuOverflowAction(
+            label = context.getString(R.string.bookmark_add)
+        ) { callBack.dispatchReadMenuAction(R.id.menu_add_bookmark) }
+        actions += ReadMenuOverflowAction(
+            label = context.getString(R.string.edit_content)
+        ) { callBack.dispatchReadMenuAction(R.id.menu_edit_content) }
+        actions += ReadMenuOverflowAction(
+            label = context.getString(R.string.book_page_anim)
+        ) { callBack.dispatchReadMenuAction(R.id.menu_page_anim) }
+        actions += ReadMenuOverflowAction(
+            label = context.getString(R.string.simulated_reading)
+        ) { callBack.dispatchReadMenuAction(R.id.menu_simulated_reading) }
+        actions += ReadMenuOverflowAction(
+            label = context.getString(R.string.replace_rule_title),
+            supportingText = if (book.getUseReplaceRule()) "已启用" else "已关闭"
+        ) { callBack.dispatchReadMenuAction(R.id.menu_enable_replace) }
+        actions += ReadMenuOverflowAction(
+            label = context.getString(R.string.same_title_removed),
+            supportingText = if (ReadBook.curTextChapter?.sameTitleRemoved == true) "已启用" else "可切换"
+        ) { callBack.dispatchReadMenuAction(R.id.menu_same_title_removed) }
+        actions += ReadMenuOverflowAction(
+            label = context.getString(R.string.re_segment),
+            supportingText = if (book.getReSegment()) "已启用" else "已关闭"
+        ) { callBack.dispatchReadMenuAction(R.id.menu_re_segment) }
+        if (book.isEpub) {
+            actions += ReadMenuOverflowAction(
+                label = context.getString(R.string.del_ruby_tag),
+                supportingText = if (book.getDelTag(io.legado.app.data.entities.Book.rubyTag)) "已启用" else "已关闭"
+            ) { callBack.dispatchReadMenuAction(R.id.menu_del_ruby_tag) }
+            actions += ReadMenuOverflowAction(
+                label = context.getString(R.string.del_h_tag),
+                supportingText = if (book.getDelTag(io.legado.app.data.entities.Book.hTag)) "已启用" else "已关闭"
+            ) { callBack.dispatchReadMenuAction(R.id.menu_del_h_tag) }
+        }
+        actions += ReadMenuOverflowAction(
+            label = context.getString(R.string.image_style)
+        ) { callBack.dispatchReadMenuAction(R.id.menu_image_style) }
+        actions += ReadMenuOverflowAction(
+            label = context.getString(R.string.update_toc)
+        ) { callBack.dispatchReadMenuAction(R.id.menu_update_toc) }
+        actions += ReadMenuOverflowAction(
+            label = context.getString(R.string.effective_replaces)
+        ) { callBack.dispatchReadMenuAction(R.id.menu_effective_replaces) }
+        actions += ReadMenuOverflowAction(
+            label = context.getString(R.string.log)
+        ) { callBack.dispatchReadMenuAction(R.id.menu_log) }
+        actions += ReadMenuOverflowAction(
+            label = context.getString(R.string.help)
+        ) { callBack.dispatchReadMenuAction(R.id.menu_help) }
+        return actions
+    }
+
     interface CallBack {
         fun autoPage()
         fun openReplaceRule()
@@ -369,6 +479,7 @@ class ReadMenu @JvmOverloads constructor(
         fun showLogin()
         fun payAction()
         fun disableSource()
+        fun dispatchReadMenuAction(itemId: Int)
         fun skipToChapter(index: Int)
         fun onMenuShow()
         fun onMenuHide()
