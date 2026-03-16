@@ -68,7 +68,14 @@ object ThemeResolver {
         return resolve(snapshot(context))
     }
 
-    internal fun snapshot(context: Context = appCtx): ThemeInputSnapshot {
+    internal fun resolvePreview(
+        context: Context = appCtx,
+        darkTheme: Boolean
+    ): LegadoThemeState {
+        return resolve(snapshot(context).copy(isDark = darkTheme))
+    }
+
+    private fun snapshot(context: Context = appCtx): ThemeInputSnapshot {
         val isDark = AppConfig.isNightTheme
         val fallbackBackground = if (isDark) {
             context.getCompatColor(R.color.md_grey_900)
@@ -131,7 +138,7 @@ object ThemeResolver {
     internal fun resolve(input: ThemeInputSnapshot): LegadoThemeState {
         val baseDraft = buildDraft(input)
         val draft = dynamicThemeProvider?.transform(input, baseDraft) ?: baseDraft
-        val shouldUseTransparentSystemBars = input.isTransparentStatusBar || input.hasBackgroundImage
+        val shouldUseTransparentSystemBars = draft.statusBar == TRANSPARENT
         return LegadoThemeState(
             isDark = input.isDark,
             isEInk = input.isEInk,
@@ -230,13 +237,15 @@ object ThemeResolver {
         }
 
         val toolbar = primary
-        val statusBar = if (input.isDark) {
+        val statusBar = if (input.isTransparentStatusBar || input.hasBackgroundImage) {
+            TRANSPARENT
+        } else if (input.isDark) {
             darken(primary, 0.9f)
         } else {
             primary
         }
         val navigationBar = when {
-            input.hasBackgroundImage -> TRANSPARENT
+            input.hasBackgroundImage && input.immNavigationBar -> TRANSPARENT
             input.immNavigationBar -> bottomBackground
             else -> darken(bottomBackground, 0.9f)
         }

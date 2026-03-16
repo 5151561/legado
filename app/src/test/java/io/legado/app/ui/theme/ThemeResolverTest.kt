@@ -76,6 +76,25 @@ class ThemeResolverTest {
         assertEquals(0x00000000, state.background.toArgb())
         assertEquals(0x00000000, state.surface.toArgb())
         assertEquals(0x00000000, state.surfaceContainer.toArgb())
+        assertEquals(0x00000000, state.statusBar.toArgb())
+        assertEquals(0x00000000, state.navigationBar.toArgb())
+    }
+
+    @Test
+    fun `transparent status bar keeps surfaces opaque`() {
+        val state = ThemeResolver.resolve(
+            snapshot(
+                isTransparentStatusBar = true,
+                backgroundColor = 0xFFF5F1EB.toInt(),
+                bottomBackgroundColor = 0xFFE8DED3.toInt()
+            )
+        )
+
+        assertTrue(state.isTransparent)
+        assertEquals(0x00000000, state.statusBar.toArgb())
+        assertEquals(0xFFF5F1EB.toInt(), state.background.toArgb())
+        assertEquals(0xFFF5F1EB.toInt(), state.surface.toArgb())
+        assertEquals(0xFFE8DED3.toInt(), state.surfaceContainer.toArgb())
     }
 
     @Test
@@ -95,6 +114,47 @@ class ThemeResolverTest {
 
         assertEquals(0xFFE0E7F0.toInt(), immersive.navigationBar.toArgb())
         assertTrue(nonImmersive.navigationBar.toArgb() != immersive.navigationBar.toArgb())
+    }
+
+    @Test
+    fun `background image keeps navigation bar opaque when immersive navigation is disabled`() {
+        val state = ThemeResolver.resolve(
+            snapshot(
+                backgroundImagePath = "/tmp/bg.png",
+                immNavigationBar = false,
+                bottomBackgroundColor = 0xFFE0E7F0.toInt()
+            )
+        )
+
+        assertEquals(0x00000000, state.statusBar.toArgb())
+        assertTrue(state.navigationBar.toArgb() != 0x00000000)
+    }
+
+    @Test
+    fun `day theme falls back when background is too dark`() {
+        val state = ThemeResolver.resolve(
+            snapshot(
+                isDark = false,
+                backgroundColor = 0xFF111111.toInt(),
+                fallbackBackgroundColor = 0xFFF5F1EB.toInt()
+            )
+        )
+
+        assertFalse(state.isDark)
+        assertEquals(0xFFF5F1EB.toInt(), state.background.toArgb())
+    }
+
+    @Test
+    fun `day theme falls back when bottom background is too dark`() {
+        val state = ThemeResolver.resolve(
+            snapshot(
+                isDark = false,
+                bottomBackgroundColor = 0xFF101010.toInt(),
+                fallbackBottomBackgroundColor = 0xFFE8DDD2.toInt()
+            )
+        )
+
+        assertEquals(0xFFE8DDD2.toInt(), state.surfaceContainer.toArgb())
     }
 
     private fun snapshot(

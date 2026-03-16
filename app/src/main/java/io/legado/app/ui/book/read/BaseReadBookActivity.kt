@@ -10,6 +10,7 @@ import android.view.View
 import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.activity.viewModels
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
@@ -26,7 +27,6 @@ import io.legado.app.help.config.LocalConfig
 import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.dialogs.selector
-import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.bottomBackground
 import io.legado.app.model.CacheBook
 import io.legado.app.model.ReadBook
@@ -34,6 +34,7 @@ import io.legado.app.ui.book.read.config.BgTextConfigDialog
 import io.legado.app.ui.book.read.config.ClickActionConfigDialog
 import io.legado.app.ui.book.read.config.PaddingConfigDialog
 import io.legado.app.ui.book.read.config.PageKeyDialog
+import io.legado.app.ui.theme.ThemeResolver
 import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.FileDoc
@@ -181,14 +182,17 @@ abstract class BaseReadBookActivity :
         if (toolBarHide) {
             setLightStatusBar(ReadBookConfig.durConfig.curStatusIconDark())
         } else {
+            val themeState = ThemeResolver.resolve(this)
             val statusBarColor =
                 if (AppConfig.readBarStyleFollowPage
                     && ReadBookConfig.durConfig.curBgType() == 0
                     || useBgMeanColor
                 ) {
                     ReadBookConfig.bgMeanColor
+                } else if (themeState.isTransparent) {
+                    themeState.toolbar.toArgb()
                 } else {
-                    ThemeStore.statusBarColor(this, AppConfig.isTransparentStatusBar)
+                    themeState.statusBar.toArgb()
                 }
             setLightStatusBar(ColorUtils.isColorLight(statusBarColor))
         }

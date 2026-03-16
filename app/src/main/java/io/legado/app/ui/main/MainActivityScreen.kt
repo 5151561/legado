@@ -28,6 +28,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentContainerView
 import androidx.compose.ui.unit.dp
+import android.view.View
+import android.view.ViewGroup
 
 data class MainNavigationItem(
     val menuId: Int,
@@ -43,7 +45,7 @@ fun MainActivityScreen(
     selectedMenuId: Int,
     bookshelfBadgeCount: Int,
     fragmentContainerId: Int,
-    onContainerReady: () -> Unit,
+    onContainerReady: (View) -> Unit,
     onItemClick: (Int) -> Unit
 ) {
     val containerBackground = MaterialTheme.colorScheme.background.toArgb()
@@ -120,12 +122,17 @@ fun MainActivityScreen(
                     factory = { context ->
                         FragmentContainerView(context).apply {
                             id = fragmentContainerId
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT
+                            )
                             setBackgroundColor(containerBackground)
-                            post(onContainerReady)
+                            post { onContainerReady(this) }
                         }
                     },
                     update = {
                         it.setBackgroundColor(containerBackground)
+                        onContainerReady(it)
                     }
                 )
             }

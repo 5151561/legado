@@ -61,13 +61,13 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>() {
     private val idExplore = 1
     private val idRss = 2
     private val idMy = 3
-    private val fragmentContainerId = View.generateViewId()
+    private val fragmentContainerId = R.id.main_fragment_container
     private val fragmentMap = hashMapOf<Int, Fragment>()
 
     private var exitTime: Long = 0
     private var bookshelfReselected: Long = 0
     private var exploreReselected: Long = 0
-    private var isFragmentContainerReady = false
+    private var fragmentContainerView: View? = null
     private val exitInterval = 2000L
 
     private var navigationItems by mutableStateOf(emptyList<MainNavigationItem>())
@@ -75,6 +75,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>() {
     private var upBooksBadgeCount by mutableIntStateOf(0)
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
+        if (savedInstanceState != null) {
+            discardRestoredMainFragments()
+        }
         initComposeContent()
         refreshNavigationItems()
         applyDefaultHomePage()
@@ -137,9 +140,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>() {
         }
     }
 
-    private fun onFragmentContainerReady() {
-        if (isFragmentContainerReady) return
-        isFragmentContainerReady = true
+    private fun onFragmentContainerReady(container: View) {
+        fragmentContainerView = container
         syncFragments()
     }
 
@@ -247,7 +249,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>() {
     }
 
     private fun syncFragments() {
-        if (!isFragmentContainerReady || navigationItems.isEmpty()) return
+        if (fragmentContainerView == null || navigationItems.isEmpty()) return
         if (supportFragmentManager.isStateSaved) {
             binding.composeViewMain.post { if (!isDestroyed) syncFragments() }
             return
@@ -265,7 +267,12 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>() {
         }
 
         navigationItems.forEachIndexed { index, item ->
-            val fragment = obtainFragment(item.fragmentId, index)
+            var fragment = obtainFragment(item.fragmentId, index)
+            if (fragment.isAdded && (fragment.id != fragmentContainerId || fragment.view == null)) {
+                transaction.remove(fragment)
+                fragmentMap.remove(item.fragmentId)
+                fragment = createFragment(item.fragmentId, index)
+            }
             fragmentMap[item.fragmentId] = fragment
             if (fragment.isAdded) {
                 if (item.menuId == currentItem.menuId) {
@@ -284,12 +291,32 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>() {
         transaction.commitNowAllowingStateLoss()
     }
 
+    private fun discardRestoredMainFragments() {
+        fragmentMap.clear()
+        val transaction = supportFragmentManager.beginTransaction().setReorderingAllowed(true)
+        var hasChanges = false
+        supportFragmentManager.fragments.forEach { fragment ->
+            val fragmentId = fragment.tag?.removePrefix(MAIN_FRAGMENT_TAG_PREFIX)?.toIntOrNull()
+            if (fragmentId != null) {
+                transaction.remove(fragment)
+                hasChanges = true
+            }
+        }
+        if (hasChanges) {
+            transaction.commitNowAllowingStateLoss()
+        }
+    }
+
     private fun obtainFragment(fragmentId: Int, position: Int): Fragment {
         fragmentMap[fragmentId]?.let { return it }
         supportFragmentManager.findFragmentByTag(fragmentTag(fragmentId))?.let {
             fragmentMap[fragmentId] = it
             return it
         }
+        return createFragment(fragmentId, position)
+    }
+
+    private fun createFragment(fragmentId: Int, position: Int): Fragment {
         return when (fragmentId) {
             idBookshelf1 -> BookshelfFragment1(position)
             idBookshelf2 -> BookshelfFragment2(position)
@@ -416,6 +443,15 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>() {
         }
         if (!BuildConfig.DEBUG) {
             Backup.autoBack(this)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        binding.composeViewMain.post {
+            if (!isDestroyed) {
+                syncFragments()
+            }
         }
     }
 

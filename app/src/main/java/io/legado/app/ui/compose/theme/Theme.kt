@@ -5,7 +5,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 import io.legado.app.ui.theme.LegadoThemeState
@@ -30,8 +29,7 @@ val LocalLegadoExtendedColors = staticCompositionLocalOf {
 @Composable
 fun rememberThemeState(): LegadoThemeState {
     val context = LocalContext.current
-    val input = ThemeResolver.snapshot(context)
-    return remember(input) { ThemeResolver.resolve(input) }
+    return ThemeResolver.resolve(context)
 }
 
 @Composable
@@ -63,7 +61,7 @@ fun LegadoPreviewTheme(
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
-    val previewState = ThemeResolver.resolve(ThemeResolver.snapshot(context).copy(isDark = darkTheme))
+    val previewState = ThemeResolver.resolvePreview(context, darkTheme)
     val colorScheme = legadoColorScheme(previewState)
     val extendedColors = LegadoExtendedColors(
         success = previewState.success,
