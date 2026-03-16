@@ -164,6 +164,35 @@ class BookSourceViewModel(application: Application) : BaseViewModel(application)
         }
     }
 
+    fun saveToFile(
+        displayedSources: List<BookSourcePart>,
+        selectedSources: List<BookSourcePart>,
+        searchKey: String?,
+        sortAscending: Boolean,
+        sort: BookSourceSort,
+        success: (file: File) -> Unit
+    ) {
+        execute {
+            val selectedRate = if (displayedSources.isEmpty()) {
+                0f
+            } else {
+                selectedSources.size.toFloat() / displayedSources.size.toFloat()
+            }
+            val sources = if (selectedRate == 1f) {
+                getBookSources(searchKey, sortAscending, sort)
+            } else if (selectedRate < 0.3f) {
+                selectedSources.toBookSource()
+            } else {
+                val keys = selectedSources.map { it.bookSourceUrl }.toHashSet()
+                val bookSources = getBookSources(searchKey, sortAscending, sort)
+                bookSources.filter {
+                    keys.contains(it.bookSourceUrl)
+                }
+            }
+            saveToFile(sources, success)
+        }
+    }
+
     private fun getBookSources(
         searchKey: String?,
         sortAscending: Boolean,

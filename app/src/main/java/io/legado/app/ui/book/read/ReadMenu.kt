@@ -59,6 +59,7 @@ class ReadMenu @JvmOverloads constructor(
                     overflowActions = overflowActions(),
                     overflowVisible = overflowVisible,
                     onDismiss = { runMenuOut() },
+                    onBackClick = { activity?.finish() },
                     onOverflowClick = { overflowVisible = true },
                     onOverflowDismiss = { overflowVisible = false },
                     onTitleClick = { callBack.openBookInfoActivity() },

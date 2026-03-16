@@ -101,6 +101,7 @@ internal fun ReadMenuMaterialContent(
     overflowActions: List<ReadMenuOverflowAction>,
     overflowVisible: Boolean,
     onDismiss: () -> Unit,
+    onBackClick: () -> Unit,
     onOverflowClick: () -> Unit,
     onOverflowDismiss: () -> Unit,
     onTitleClick: () -> Unit,
@@ -208,7 +209,7 @@ internal fun ReadMenuMaterialContent(
             ) {
                 Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = onDismiss) {
+                        IconButton(onClick = onBackClick) {
                             Icon(
                                 Icons.AutoMirrored.Rounded.ArrowBack,
                                 contentDescription = null,
@@ -348,8 +349,8 @@ internal fun ReadMenuMaterialContent(
                         }
                         Box(
                             modifier = Modifier
-                                .height(180.dp)
-                                .width(48.dp),
+                                .height(220.dp)
+                                .width(56.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Slider(
@@ -364,7 +365,7 @@ internal fun ReadMenuMaterialContent(
                                 valueRange = 1f..255f,
                                 enabled = !state.brightnessAuto,
                                 modifier = Modifier
-                                    .width(160.dp)
+                                    .width(220.dp)
                                     .rotate(-90f)
                             )
                         }
