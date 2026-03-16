@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -23,7 +22,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -61,8 +59,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,9 +68,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -153,7 +151,6 @@ fun BookSourceScreen(
 ) {
     var showBottomSheet by remember { mutableStateOf(false) }
     val selectedCount = selectedUrls.size
-    val isAllSelected = selectedCount == sources.size && sources.isNotEmpty()
 
     Scaffold(
         topBar = {
@@ -519,6 +516,14 @@ private fun BookSourceItem(
     onActionClick: (BookSourceItemAction) -> Unit
 ) {
     var showItemMenu by remember { mutableStateOf(false) }
+    // 关键优化：本地即时状态，解决由于数据库写入延迟导致的动画卡顿
+    var localChecked by remember(source.bookSourceUrl) { mutableStateOf(source.enabled) }
+    
+    // 同步数据库状态
+    LaunchedEffect(source.enabled) {
+        localChecked = source.enabled
+    }
+
     val backgroundColor by animateColorAsState(
         targetValue = if (isSelected) {
             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.32f)
@@ -581,9 +586,14 @@ private fun BookSourceItem(
                     )
                 }
             }
+            // 使用原生 Switch，并缩小到 0.75f
             Switch(
-                checked = source.enabled,
-                onCheckedChange = onEnableChange
+                checked = localChecked,
+                onCheckedChange = { 
+                    localChecked = it 
+                    onEnableChange(it) 
+                },
+                modifier = Modifier.scale(0.75f)
             )
             IconButton(onClick = onEditClick) {
                 Icon(Icons.Default.Edit, contentDescription = "编辑")

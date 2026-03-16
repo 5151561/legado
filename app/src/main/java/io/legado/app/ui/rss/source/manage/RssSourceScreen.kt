@@ -50,7 +50,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -67,6 +66,7 @@ import io.legado.app.data.entities.RssSource
 import io.legado.app.ui.compose.theme.LegadoBatchActionSheet
 import io.legado.app.ui.compose.theme.LegadoSearchField
 import io.legado.app.ui.compose.theme.LegadoSelectionBottomBar
+import io.legado.app.ui.compose.theme.LegadoSwitch
 
 enum class RssSourceTopAction {
     Add,
@@ -417,7 +417,7 @@ private fun RssSourceItem(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Switch(
+            LegadoSwitch(
                 checked = source.enabled,
                 onCheckedChange = onEnableChange
             )
