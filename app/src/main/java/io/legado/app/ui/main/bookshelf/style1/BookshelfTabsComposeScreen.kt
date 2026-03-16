@@ -2,7 +2,6 @@ package io.legado.app.ui.main.bookshelf.style1
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,7 +45,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -128,14 +126,10 @@ fun BookshelfTabsComposeScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            BookshelfTopBar(
+            BookshelfMainTopBar(
                 onSearchClick = onSearchClick,
+                onAddActionClick = onAddActionClick,
                 onOverflowActionClick = onOverflowActionClick
-            )
-        },
-        floatingActionButton = {
-            BookshelfAddFab(
-                onActionClick = onAddActionClick
             )
         }
     ) { innerPadding ->
@@ -156,7 +150,7 @@ fun BookshelfTabsComposeScreen(
                         start = LegadoPageDefaults.HorizontalPadding,
                         top = LegadoPageDefaults.SectionSpacing,
                         end = LegadoPageDefaults.HorizontalPadding,
-                        bottom = 120.dp
+                        bottom = 24.dp
                     ),
                     onTabClick = onTabClick,
                     onTabLongClick = onTabLongClick,
@@ -175,7 +169,7 @@ fun BookshelfTabsComposeScreen(
                         start = LegadoPageDefaults.HorizontalPadding,
                         top = LegadoPageDefaults.SectionSpacing,
                         end = LegadoPageDefaults.HorizontalPadding,
-                        bottom = 120.dp
+                        bottom = 24.dp
                     ),
                     onTabClick = onTabClick,
                     onTabLongClick = onTabLongClick,
@@ -189,10 +183,12 @@ fun BookshelfTabsComposeScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BookshelfTopBar(
+internal fun BookshelfMainTopBar(
     onSearchClick: () -> Unit,
+    onAddActionClick: (BookshelfAddAction) -> Unit,
     onOverflowActionClick: (BookshelfOverflowAction) -> Unit
 ) {
+    var showAddMenu by remember { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
     LegadoTopBarSurface {
         Column(
@@ -225,6 +221,34 @@ private fun BookshelfTopBar(
                     )
                 }
                 Box {
+                    IconButton(onClick = { showAddMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Outlined.Add,
+                            contentDescription = null
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showAddMenu,
+                        onDismissRequest = { showAddMenu = false }
+                    ) {
+                        BookshelfAddAction.entries.forEach { action ->
+                            DropdownMenuItem(
+                                text = { Text(text = androidx.compose.ui.res.stringResource(action.labelRes)) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = addActionIcon(action),
+                                        contentDescription = null
+                                    )
+                                },
+                                onClick = {
+                                    showAddMenu = false
+                                    onAddActionClick(action)
+                                }
+                            )
+                        }
+                    }
+                }
+                Box {
                     IconButton(onClick = { showOverflowMenu = true }) {
                         Icon(
                             imageVector = Icons.Outlined.MoreVert,
@@ -254,46 +278,6 @@ private fun BookshelfTopBar(
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun BookshelfAddFab(
-    onActionClick: (BookshelfAddAction) -> Unit
-) {
-    var showAddMenu by remember { mutableStateOf(false) }
-    Box {
-        LargeFloatingActionButton(
-            onClick = { showAddMenu = true },
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Add,
-                contentDescription = null,
-                modifier = Modifier.size(32.dp)
-            )
-        }
-        DropdownMenu(
-            expanded = showAddMenu,
-            onDismissRequest = { showAddMenu = false }
-        ) {
-            BookshelfAddAction.entries.forEach { action ->
-                DropdownMenuItem(
-                    text = { Text(text = androidx.compose.ui.res.stringResource(action.labelRes)) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = addActionIcon(action),
-                            contentDescription = null
-                        )
-                    },
-                    onClick = {
-                        showAddMenu = false
-                        onActionClick(action)
-                    }
-                )
             }
         }
     }

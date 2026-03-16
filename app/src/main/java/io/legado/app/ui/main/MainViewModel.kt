@@ -181,10 +181,13 @@ class MainViewModel(application: Application) : BaseViewModel(application) {
     }
 
     fun postUpBooksLiveData(reset: Boolean = false) {
+        val count = waitUpTocBooks.size + onUpTocBooks.count()
         if (AppConfig.showWaitUpCount) {
-            onUpBooksLiveData.postValue(waitUpTocBooks.size + onUpTocBooks.count())
+            onUpBooksLiveData.postValue(count)
         } else if (reset) {
             onUpBooksLiveData.postValue(0)
+        } else {
+            onUpBooksLiveData.postValue(count)
         }
     }
 
