@@ -5,9 +5,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 import io.legado.app.lib.theme.ThemeStore
+import io.legado.app.ui.theme.LegadoThemeState
+import io.legado.app.ui.theme.ThemeResolver
 import io.legado.app.utils.ColorUtils
 
 @Immutable
@@ -23,11 +26,23 @@ val LocalLegadoExtendedColors = staticCompositionLocalOf {
     )
 }
 
+/**
+ * 方便在 Compose 中获取当前主题状态
+ */
+@Composable
+fun rememberThemeState(): LegadoThemeState {
+    val context = LocalContext.current
+    return remember(ThemeStore.isConfigured(context)) {
+        ThemeResolver.resolve(context)
+    }
+}
+
 @Composable
 fun LegadoComposeTheme(
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
+    // 为了兼容性，暂时保留原始逻辑，后续逐步通过 rememberThemeState 替换
     val darkTheme = !ColorUtils.isColorLight(ThemeStore.backgroundColor(context))
     val colorScheme = legadoColorScheme(darkTheme)
     val extendedColors = LegadoExtendedColors(

@@ -3,16 +3,30 @@ package io.legado.app.ui.replace
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
-import android.view.SubMenu
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.appcompat.widget.PopupMenu
-import androidx.appcompat.widget.SearchView
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.HelpOutline
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.FileUpload
+import androidx.compose.material.icons.rounded.KeyboardDoubleArrowDown
+import androidx.compose.material.icons.rounded.KeyboardDoubleArrowUp
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Publish
+import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.LinearLayoutManager
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
 import io.legado.app.constant.AppLog
@@ -24,27 +38,25 @@ import io.legado.app.help.DirectLinkUpload
 import io.legado.app.help.book.ContentProcessor
 import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.lib.dialogs.alert
-import io.legado.app.lib.theme.primaryColor
-import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.ui.association.ImportReplaceRuleDialog
+import io.legado.app.ui.compose.theme.LegadoComposeTheme
+import io.legado.app.ui.compose.theme.LegadoMenuButton
+import io.legado.app.ui.compose.theme.LegadoPageDefaults
+import io.legado.app.ui.compose.theme.LegadoSearchField
+import io.legado.app.ui.compose.theme.RuleManageItemUi
+import io.legado.app.ui.compose.theme.RuleManageMaterialScreen
+import io.legado.app.ui.compose.theme.RuleManageSheetAction
 import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.qrcode.QrCodeResult
 import io.legado.app.ui.replace.edit.ReplaceEditActivity
-import io.legado.app.ui.widget.SelectActionBar
-import io.legado.app.ui.widget.recycler.DragSelectTouchHelper
-import io.legado.app.ui.widget.recycler.ItemTouchCallback
-import io.legado.app.ui.widget.recycler.VerticalDivider
 import io.legado.app.utils.ACache
 import io.legado.app.utils.GSON
-import io.legado.app.utils.applyTint
 import io.legado.app.utils.isAbsUrl
 import io.legado.app.utils.launch
 import io.legado.app.utils.sendToClip
-import io.legado.app.utils.setEdgeEffectColor
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.showHelp
 import io.legado.app.utils.splitNotBlank
-import io.legado.app.utils.transaction
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
@@ -54,25 +66,19 @@ import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 
-/**
- * 替换规则管理
- */
-class ReplaceRuleActivity : VMBaseActivity<ActivityReplaceRuleBinding, ReplaceRuleViewModel>(),
-    SearchView.OnQueryTextListener,
-    PopupMenu.OnMenuItemClickListener,
-    SelectActionBar.CallBack,
-    ReplaceRuleAdapter.CallBack {
+class ReplaceRuleActivity : VMBaseActivity<ActivityReplaceRuleBinding, ReplaceRuleViewModel>() {
+
     override val binding by viewBinding(ActivityReplaceRuleBinding::inflate)
     override val viewModel by viewModels<ReplaceRuleViewModel>()
+
     private val importRecordKey = "replaceRuleRecordKey"
-    private val adapter by lazy { ReplaceRuleAdapter(this, this) }
-    private val searchView: SearchView by lazy {
-        binding.titleBar.findViewById(R.id.search_view)
-    }
-    private var groups = arrayListOf<String>()
-    private var groupMenu: SubMenu? = null
+    private var groups by mutableStateOf<List<String>>(emptyList())
+    private var replaceRules by mutableStateOf<List<ReplaceRule>>(emptyList())
+    private var selectedIds by mutableStateOf<Set<Long>>(emptySet())
+    private var searchQuery by mutableStateOf("")
     private var replaceRuleFlowJob: Job? = null
     private var dataInit = false
+
     private val qrCodeResult = registerForActivityResult(QrCodeResult()) {
         it ?: return@registerForActivityResult
         showDialogFragment(ImportReplaceRuleDialog(it))
@@ -107,101 +113,221 @@ class ReplaceRuleActivity : VMBaseActivity<ActivityReplaceRuleBinding, ReplaceRu
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
-        initRecyclerView()
-        initSearchView()
-        initSelectActionView()
+        binding.composeReplaceRuleContent.setContent {
+            LegadoComposeTheme {
+                RuleManageMaterialScreen(
+                    title = getString(R.string.replace_purify),
+                    subtitle = "管理替换净化规则与分组过滤",
+                    items = replaceRules.map {
+                        RuleManageItemUi(
+                            key = it.id.toString(),
+                            title = it.name,
+                            summary = buildString {
+                                append(if (it.isRegex) "正则" else "文本")
+                                if (it.pattern.isNotBlank()) {
+                                    append(" · ")
+                                    append(it.pattern)
+                                }
+                                if (it.replacement.isNotBlank()) {
+                                    append(" → ")
+                                    append(it.replacement)
+                                }
+                            },
+                            enabled = it.isEnabled,
+                            selected = selectedIds.contains(it.id),
+                            badge = it.group
+                        )
+                    },
+                    selectedCount = selectedIds.size,
+                    onBackClick = ::finish,
+                    onSelectAll = ::selectAll,
+                    onInvertSelection = ::invertSelection,
+                    onDeleteSelection = ::deleteSelection,
+                    onItemClick = { item -> toggleSelection(item.key.toLong()) },
+                    onToggleSelect = { item, checked ->
+                        updateSelection(item.key.toLong(), checked)
+                    },
+                    onToggleEnabled = { item, checked ->
+                        replaceRules.firstOrNull { it.id.toString() == item.key }?.let {
+                            setResult(RESULT_OK)
+                            it.isEnabled = checked
+                            viewModel.update(it)
+                        }
+                    },
+                    onEditItem = { item ->
+                        setResult(RESULT_OK)
+                        editActivity.launch(
+                            ReplaceEditActivity.startIntent(this, item.key.toLong())
+                        )
+                    },
+                    batchActions = listOf(
+                        RuleManageSheetAction("enable", "批量启用", Icons.Rounded.KeyboardDoubleArrowUp),
+                        RuleManageSheetAction("disable", "批量禁用", Icons.Rounded.KeyboardDoubleArrowDown),
+                        RuleManageSheetAction("top", "批量置顶", Icons.Rounded.KeyboardDoubleArrowUp),
+                        RuleManageSheetAction("bottom", "批量置底", Icons.Rounded.KeyboardDoubleArrowDown),
+                        RuleManageSheetAction("export", "导出选中", Icons.Rounded.Publish)
+                    ),
+                    onBatchAction = ::handleBatchAction,
+                    topBarContent = {
+                        IconButton(onClick = {
+                            editActivity.launch(ReplaceEditActivity.startIntent(this@ReplaceRuleActivity))
+                        }) {
+                            Icon(Icons.Rounded.Add, contentDescription = null)
+                        }
+                        LegadoMenuButton(
+                            icon = { Icon(Icons.Rounded.MoreVert, contentDescription = null) }
+                        ) { dismiss ->
+                            DropdownMenuItem(
+                                text = { Text("本地导入") },
+                                onClick = {
+                                    importDoc.launch {
+                                        mode = HandleFileContract.FILE
+                                        allowExtensions = arrayOf("txt", "json")
+                                    }
+                                    dismiss()
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.FileUpload, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("在线导入") },
+                                onClick = {
+                                    showImportDialog()
+                                    dismiss()
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.Download, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("扫码导入") },
+                                onClick = {
+                                    qrCodeResult.launch()
+                                    dismiss()
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Rounded.QrCodeScanner, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("分组管理") },
+                                onClick = {
+                                    showDialogFragment<GroupManageDialog>()
+                                    dismiss()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("无分组") },
+                                onClick = {
+                                    searchQuery = getString(R.string.no_group)
+                                    observeReplaceRuleData(searchQuery)
+                                    dismiss()
+                                }
+                            )
+                            groups.forEach { group ->
+                                DropdownMenuItem(
+                                    text = { Text(group) },
+                                    onClick = {
+                                        searchQuery = "group:$group"
+                                        observeReplaceRuleData(searchQuery)
+                                        dismiss()
+                                    }
+                                )
+                            }
+                            DropdownMenuItem(
+                                text = { Text("帮助") },
+                                onClick = {
+                                    showHelp("replaceRuleHelp")
+                                    dismiss()
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.AutoMirrored.Rounded.HelpOutline, contentDescription = null)
+                                }
+                            )
+                        }
+                    },
+                    headerBottomContent = {
+                        LegadoSearchField(
+                            query = searchQuery,
+                            placeholder = getString(R.string.replace_purify_search),
+                                onQueryChange = {
+                                    searchQuery = it
+                                    observeReplaceRuleData(it)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        start = LegadoPageDefaults.HorizontalPadding,
+                                        end = LegadoPageDefaults.HorizontalPadding,
+                                        bottom = 12.dp
+                                    )
+                        )
+                    },
+                    itemMenuContent = { item, dismiss ->
+                        DropdownMenuItem(
+                            text = { Text("置顶") },
+                            onClick = {
+                                replaceRules.firstOrNull { it.id.toString() == item.key }?.let {
+                                    setResult(RESULT_OK)
+                                    viewModel.toTop(it)
+                                }
+                                dismiss()
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Rounded.KeyboardDoubleArrowUp, contentDescription = null)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("置底") },
+                            onClick = {
+                                replaceRules.firstOrNull { it.id.toString() == item.key }?.let {
+                                    setResult(RESULT_OK)
+                                    viewModel.toBottom(it)
+                                }
+                                dismiss()
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Rounded.KeyboardDoubleArrowDown, contentDescription = null)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("删除") },
+                            onClick = {
+                                replaceRules.firstOrNull { it.id.toString() == item.key }?.let(::deleteRule)
+                                dismiss()
+                            }
+                        )
+                    }
+                )
+            }
+        }
         observeReplaceRuleData()
         observeGroupData()
     }
 
-    override fun onCompatCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.replace_rule, menu)
-        return super.onCompatCreateOptionsMenu(menu)
-    }
-
-    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        groupMenu = menu.findItem(R.id.menu_group)?.subMenu
-        upGroupMenu()
-        return super.onPrepareOptionsMenu(menu)
-    }
-
-    private fun initRecyclerView() {
-        binding.recyclerView.setEdgeEffectColor(primaryColor)
-        binding.recyclerView.layoutManager = LinearLayoutManager(this)
-        binding.recyclerView.adapter = adapter
-        binding.recyclerView.addItemDecoration(VerticalDivider(this))
-        val itemTouchCallback = ItemTouchCallback(adapter)
-        itemTouchCallback.isCanDrag = true
-        val dragSelectTouchHelper: DragSelectTouchHelper =
-            DragSelectTouchHelper(adapter.dragSelectCallback).setSlideArea(16, 50)
-        dragSelectTouchHelper.attachToRecyclerView(binding.recyclerView)
-        // When this page is opened, it is in selection mode
-        dragSelectTouchHelper.activeSlideSelect()
-
-        // Note: need judge selection first, so add ItemTouchHelper after it.
-        ItemTouchHelper(itemTouchCallback).attachToRecyclerView(binding.recyclerView)
-    }
-
-    private fun initSearchView() {
-        searchView.applyTint(primaryTextColor)
-        searchView.queryHint = getString(R.string.replace_purify_search)
-        searchView.setOnQueryTextListener(this)
-    }
-
-    override fun selectAll(selectAll: Boolean) {
-        if (selectAll) {
-            adapter.selectAll()
-        } else {
-            adapter.revertSelection()
-        }
-    }
-
-    override fun revertSelection() {
-        adapter.revertSelection()
-    }
-
-    override fun onClickSelectBarMainAction() {
-        alert(titleResource = R.string.draw, messageResource = R.string.sure_del) {
-            yesButton { viewModel.delSelection(adapter.selection) }
-            noButton()
-        }
-    }
-
-    private fun initSelectActionView() {
-        binding.selectActionBar.setMainActionText(R.string.delete)
-        binding.selectActionBar.inflateMenu(R.menu.replace_rule_sel)
-        binding.selectActionBar.setOnMenuItemClickListener(this)
-        binding.selectActionBar.setCallBack(this)
-    }
+    private val selectedRules: List<ReplaceRule>
+        get() = replaceRules.filter { selectedIds.contains(it.id) }
 
     private fun observeReplaceRuleData(searchKey: String? = null) {
         dataInit = false
         replaceRuleFlowJob?.cancel()
         replaceRuleFlowJob = lifecycleScope.launch {
             when {
-                searchKey.isNullOrEmpty() -> {
-                    appDb.replaceRuleDao.flowAll()
-                }
-
-                searchKey == getString(R.string.no_group) -> {
-                    appDb.replaceRuleDao.flowNoGroup()
-                }
-
+                searchKey.isNullOrEmpty() -> appDb.replaceRuleDao.flowAll()
+                searchKey == getString(R.string.no_group) -> appDb.replaceRuleDao.flowNoGroup()
                 searchKey.startsWith("group:") -> {
-                    val key = searchKey.substringAfter("group:")
-                    appDb.replaceRuleDao.flowGroupSearch("%$key%")
+                    appDb.replaceRuleDao.flowGroupSearch("%${searchKey.substringAfter("group:")}%")
                 }
-
-                else -> {
-                    appDb.replaceRuleDao.flowSearch("%$searchKey%")
-                }
+                else -> appDb.replaceRuleDao.flowSearch("%$searchKey%")
             }.catch {
                 AppLog.put("替换规则管理界面更新数据出错", it)
             }.flowOn(IO).conflate().collect {
                 if (dataInit) {
                     setResult(Activity.RESULT_OK)
                 }
-                adapter.setItems(it, adapter.diffItemCallBack)
+                replaceRules = it
+                selectedIds = selectedIds.intersect(it.mapTo(linkedSetOf()) { rule -> rule.id })
                 dataInit = true
                 delay(100)
             }
@@ -211,61 +337,80 @@ class ReplaceRuleActivity : VMBaseActivity<ActivityReplaceRuleBinding, ReplaceRu
     private fun observeGroupData() {
         lifecycleScope.launch {
             appDb.replaceRuleDao.flowGroups().collect {
-                groups.clear()
-                groups.addAll(it)
-                upGroupMenu()
+                groups = it
             }
         }
     }
 
-    override fun onCompatOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.menu_add_replace_rule ->
-                editActivity.launch(ReplaceEditActivity.startIntent(this))
-
-            R.id.menu_group_manage -> showDialogFragment<GroupManageDialog>()
-            R.id.menu_del_selection -> viewModel.delSelection(adapter.selection)
-            R.id.menu_import_onLine -> showImportDialog()
-            R.id.menu_import_local -> importDoc.launch {
-                mode = HandleFileContract.FILE
-                allowExtensions = arrayOf("txt", "json")
-            }
-
-            R.id.menu_import_qr -> qrCodeResult.launch()
-            R.id.menu_help -> showHelp("replaceRuleHelp")
-            R.id.menu_group_null -> {
-                searchView.setQuery(getString(R.string.no_group), true)
-            }
-
-            else -> if (item.groupId == R.id.replace_group) {
-                searchView.setQuery("group:${item.title}", true)
-            }
+    private fun updateSelection(id: Long, checked: Boolean) {
+        selectedIds = selectedIds.toMutableSet().apply {
+            if (checked) add(id) else remove(id)
         }
-        return super.onCompatOptionsItemSelected(item)
     }
 
-    override fun onMenuItemClick(item: MenuItem?): Boolean {
-        when (item?.itemId) {
-            R.id.menu_enable_selection -> viewModel.enableSelection(adapter.selection)
-            R.id.menu_disable_selection -> viewModel.disableSelection(adapter.selection)
-            R.id.menu_top_sel -> viewModel.topSelect(adapter.selection)
-            R.id.menu_bottom_sel -> viewModel.bottomSelect(adapter.selection)
-            R.id.menu_export_selection -> exportResult.launch {
-                mode = HandleFileContract.EXPORT
-                fileData = HandleFileContract.FileData(
-                    "exportReplaceRule.json",
-                    GSON.toJson(adapter.selection).toByteArray(),
-                    "application/json"
-                )
-            }
+    private fun toggleSelection(id: Long) {
+        selectedIds = selectedIds.toMutableSet().apply {
+            if (!add(id)) remove(id)
         }
-        return false
     }
 
-    private fun upGroupMenu() = groupMenu?.transaction { menu ->
-        menu.removeGroup(R.id.replace_group)
-        groups.forEach {
-            menu.add(R.id.replace_group, Menu.NONE, Menu.NONE, it)
+    private fun selectAll() {
+        selectedIds = replaceRules.mapTo(linkedSetOf()) { it.id }
+    }
+
+    private fun invertSelection() {
+        selectedIds = replaceRules.mapNotNullTo(linkedSetOf()) {
+            if (selectedIds.contains(it.id)) null else it.id
+        }
+    }
+
+    private fun deleteSelection() {
+        if (selectedRules.isEmpty()) return
+        alert(titleResource = R.string.draw, messageResource = R.string.sure_del) {
+            yesButton {
+                setResult(RESULT_OK)
+                viewModel.delSelection(selectedRules)
+            }
+            noButton()
+        }
+    }
+
+    private fun deleteRule(rule: ReplaceRule) {
+        alert(R.string.draw) {
+            setMessage(getString(R.string.sure_del) + "\n" + rule.name)
+            noButton()
+            yesButton {
+                setResult(RESULT_OK)
+                viewModel.delete(rule)
+            }
+        }
+    }
+
+    private fun handleBatchAction(action: String) {
+        when (action) {
+            "enable" -> viewModel.enableSelection(selectedRules)
+            "disable" -> viewModel.disableSelection(selectedRules)
+            "top" -> {
+                setResult(RESULT_OK)
+                viewModel.topSelect(selectedRules)
+            }
+            "bottom" -> {
+                setResult(RESULT_OK)
+                viewModel.bottomSelect(selectedRules)
+            }
+            "export" -> exportSelection()
+        }
+    }
+
+    private fun exportSelection() {
+        if (selectedRules.isEmpty()) return
+        exportResult.launch {
+            mode = HandleFileContract.EXPORT
+            fileData = HandleFileContract.FileData(
+                "exportReplaceRule.json",
+                GSON.toJson(selectedRules).toByteArray(),
+                "application/json"
+            )
         }
     }
 
@@ -293,69 +438,15 @@ class ReplaceRuleActivity : VMBaseActivity<ActivityReplaceRuleBinding, ReplaceRu
                         cacheUrls.add(0, it)
                         aCache.put(importRecordKey, cacheUrls.joinToString(","))
                     }
-                    showDialogFragment(
-                        ImportReplaceRuleDialog(it)
-                    )
+                    showDialogFragment(ImportReplaceRuleDialog(it))
                 }
             }
             cancelButton()
         }
     }
 
-    override fun onQueryTextChange(newText: String?): Boolean {
-        observeReplaceRuleData(newText)
-        return false
-    }
-
-    override fun onQueryTextSubmit(query: String?): Boolean {
-        return false
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         Coroutine.async { ContentProcessor.upReplaceRules() }
-    }
-
-    override fun upCountView() {
-        binding.selectActionBar.upCountView(
-            adapter.selection.size,
-            adapter.itemCount
-        )
-    }
-
-    override fun update(vararg rule: ReplaceRule) {
-        setResult(RESULT_OK)
-        viewModel.update(*rule)
-    }
-
-    override fun delete(rule: ReplaceRule) {
-        alert(R.string.draw) {
-            setMessage(getString(R.string.sure_del) + "\n" + rule.name)
-            noButton()
-            yesButton {
-                setResult(RESULT_OK)
-                viewModel.delete(rule)
-            }
-        }
-    }
-
-    override fun edit(rule: ReplaceRule) {
-        setResult(RESULT_OK)
-        editActivity.launch(ReplaceEditActivity.startIntent(this, rule.id))
-    }
-
-    override fun toTop(rule: ReplaceRule) {
-        setResult(RESULT_OK)
-        viewModel.toTop(rule)
-    }
-
-    override fun toBottom(rule: ReplaceRule) {
-        setResult(RESULT_OK)
-        viewModel.toBottom(rule)
-    }
-
-    override fun upOrder() {
-        setResult(RESULT_OK)
-        viewModel.upOrder()
     }
 }

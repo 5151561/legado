@@ -18,8 +18,9 @@ import io.legado.app.ui.book.bookmark.AllBookmarkActivity
 import io.legado.app.ui.book.source.manage.BookSourceActivity
 import io.legado.app.ui.book.toc.rule.TxtTocRuleActivity
 import io.legado.app.ui.compose.theme.LegadoComposeTheme
-import io.legado.app.ui.config.ConfigActivity
-import io.legado.app.ui.config.ConfigTag
+import io.legado.app.ui.config.BackupComposeActivity
+import io.legado.app.ui.config.OtherComposeActivity
+import io.legado.app.ui.config.ThemeComposeActivity
 import io.legado.app.ui.dict.rule.DictRuleActivity
 import io.legado.app.ui.file.FileManageActivity
 import io.legado.app.ui.main.MainFragmentInterface
@@ -27,10 +28,8 @@ import io.legado.app.ui.replace.ReplaceRuleActivity
 import io.legado.app.service.WebService
 import io.legado.app.utils.getPrefString
 import io.legado.app.utils.observeEventSticky
-import io.legado.app.utils.openUrl
 import io.legado.app.utils.putPrefBoolean
 import io.legado.app.utils.putPrefString
-import io.legado.app.utils.sendToClip
 import io.legado.app.utils.showHelp
 import io.legado.app.utils.startActivity
 import io.legado.app.utils.viewbindingdelegate.viewBinding
@@ -61,7 +60,6 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
                     onHelpClick = { showHelp("appHelp") },
                     onThemeModeClick = ::showThemeModeSelector,
                     onWebServiceToggle = ::toggleWebService,
-                    onWebServiceLongClick = ::showWebServiceActions,
                     onItemClick = ::handleItemClick
                 )
             }
@@ -78,7 +76,7 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
 
     private fun refreshComposeState() {
         val labels = resources.getStringArray(R.array.theme_mode)
-        val values = resources.getStringArray(io.legado.app.R.array.theme_mode_v)
+        val values = resources.getStringArray(R.array.theme_mode_v)
         val selectedValue = requireContext().getPrefString(PreferKey.themeMode, "0") ?: "0"
         themeModeLabel = labels.getOrElse(values.indexOf(selectedValue).coerceAtLeast(0)) {
             labels.firstOrNull().orEmpty()
@@ -93,7 +91,7 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
 
     private fun showThemeModeSelector() {
         val labels = ArrayList(resources.getStringArray(R.array.theme_mode).toList())
-        val values = resources.getStringArray(io.legado.app.R.array.theme_mode_v)
+        val values = resources.getStringArray(R.array.theme_mode_v)
         context?.selector(labels) { _, index ->
             requireContext().putPrefString(PreferKey.themeMode, values.getOrNull(index) ?: "0")
             ThemeConfig.applyDayNight(requireContext())
@@ -111,16 +109,6 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
         refreshComposeState()
     }
 
-    private fun showWebServiceActions() {
-        if (!WebService.isRun) return
-        context?.selector(arrayListOf("复制地址", "浏览器打开")) { _, index ->
-            when (index) {
-                0 -> context?.sendToClip(webServiceSummary)
-                1 -> context?.openUrl(webServiceSummary)
-            }
-        }
-    }
-
     private fun handleItemClick(key: String) {
         when (key) {
             "bookSourceManage" -> startActivity<BookSourceActivity>()
@@ -130,17 +118,11 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
             "themeMode" -> showThemeModeSelector()
             "webService" -> toggleWebService(!webServiceEnabled)
             "bookmark" -> startActivity<AllBookmarkActivity>()
-            "setting" -> startActivity<ConfigActivity> {
-                putExtra("configTag", ConfigTag.OTHER_CONFIG)
-            }
+            "setting" -> startActivity<OtherComposeActivity>()
 
-            "web_dav_setting" -> startActivity<ConfigActivity> {
-                putExtra("configTag", ConfigTag.BACKUP_CONFIG)
-            }
+            "web_dav_setting" -> startActivity<BackupComposeActivity>()
 
-            "theme_setting" -> startActivity<ConfigActivity> {
-                putExtra("configTag", ConfigTag.THEME_CONFIG)
-            }
+            "theme_setting" -> startActivity<ThemeComposeActivity>()
 
             "fileManage" -> startActivity<FileManageActivity>()
             "readRecord" -> startActivity<ReadRecordActivity>()

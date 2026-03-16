@@ -1,6 +1,6 @@
 # Compose Material 3 Screen Spec
 
-这套规范用于当前 Kotlin + Jetpack Compose 的 Material Design 3 迁移，先统一 `书架`、`我的`、`书源管理` 三类页面。
+这套规范用于当前 Kotlin + Jetpack Compose 的 Material Design 3 迁移。
 当前基准风格以“书源管理页”的扁平、效率优先风格为主，而不是大面积概览卡或浮岛。
 
 ## 页面分层

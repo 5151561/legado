@@ -194,6 +194,21 @@
         <activity
             android:name=".ui.config.ConfigActivity"
             android:launchMode="standard" />
+        <activity
+            android:name=".ui.config.BackupComposeActivity"
+            android:launchMode="singleTop"
+            android:screenOrientation="behind"
+            tools:ignore="DiscouragedApi" />
+        <activity
+            android:name=".ui.config.ThemeComposeActivity"
+            android:launchMode="singleTop"
+            android:screenOrientation="behind"
+            tools:ignore="DiscouragedApi" />
+        <activity
+            android:name=".ui.config.OtherComposeActivity"
+            android:launchMode="singleTop"
+            android:screenOrientation="behind"
+            tools:ignore="DiscouragedApi" />
         <!-- 搜索界面 -->
         <activity
             android:name=".ui.book.search.SearchActivity"
@@ -202,47 +217,56 @@
         <activity
             android:name=".ui.about.AboutActivity"
             android:launchMode="singleTask"
-            android:screenOrientation="behind" />
+            android:screenOrientation="behind"
+            tools:ignore="DiscouragedApi" />
         <!-- 书源管理 -->
         <activity
             android:name=".ui.book.source.manage.BookSourceActivity"
             android:launchMode="singleTop"
-            android:screenOrientation="behind" />
+            android:screenOrientation="behind"
+            tools:ignore="DiscouragedApi" />
         <!-- 订阅源管理 -->
         <activity
             android:name=".ui.rss.source.manage.RssSourceActivity"
             android:launchMode="singleTop"
-            android:screenOrientation="behind" />
+            android:screenOrientation="behind"
+            tools:ignore="DiscouragedApi" />
         <!-- txt目录规则管理 -->
         <activity
             android:name=".ui.book.toc.rule.TxtTocRuleActivity"
             android:launchMode="singleTop"
-            android:screenOrientation="behind" />
+            android:screenOrientation="behind"
+            tools:ignore="DiscouragedApi" />
         <!-- 替换规则界面 -->
         <activity
             android:name=".ui.replace.ReplaceRuleActivity"
             android:launchMode="singleTop"
-            android:screenOrientation="behind" />
+            android:screenOrientation="behind"
+            tools:ignore="DiscouragedApi" />
         <!-- 书籍管理 -->
         <activity
             android:name=".ui.book.manage.BookshelfManageActivity"
             android:launchMode="singleTop"
-            android:screenOrientation="behind" />
+            android:screenOrientation="behind"
+            tools:ignore="DiscouragedApi" />
         <!-- 书源调试 -->
         <activity
             android:name=".ui.book.source.debug.BookSourceDebugActivity"
             android:launchMode="singleTop"
-            android:screenOrientation="behind" />
+            android:screenOrientation="behind"
+            tools:ignore="DiscouragedApi" />
         <!-- 目录 -->
         <activity
             android:name=".ui.book.toc.TocActivity"
             android:launchMode="singleTop"
-            android:screenOrientation="behind" />
+            android:screenOrientation="behind"
+            tools:ignore="DiscouragedApi" />
         <!-- 正文搜索 -->
         <activity
             android:name=".ui.book.searchContent.SearchContentActivity"
             android:launchMode="singleTop"
-            android:screenOrientation="behind" />
+            android:screenOrientation="behind"
+            tools:ignore="DiscouragedApi" />
         <!-- RSS条目 -->
         <activity
             android:name=".ui.rss.article.RssSortActivity"
@@ -510,15 +534,6 @@
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
-        </provider>
-        <provider
-            android:name="androidx.startup.InitializationProvider"
-            android:authorities="${applicationId}.androidx-startup"
-            android:exported="false"
-            tools:node="merge">
-            <meta-data
-                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-                tools:node="remove" />
         </provider>
 
         <meta-data
