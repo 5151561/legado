@@ -155,6 +155,10 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
     val immNavigationBar: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.immNavigationBar, true)
 
+    val dynamicColor: Boolean
+        get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            appCtx.getPrefBoolean(PreferKey.dynamicColor, false)
+
     val pureBlack: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.pureBlack, false)
 

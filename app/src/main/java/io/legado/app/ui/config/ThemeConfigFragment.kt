@@ -76,6 +76,9 @@ class ThemeConfigFragment : PreferenceFragment(),
         if (Build.VERSION.SDK_INT < 26) {
             preferenceScreen.removePreferenceRecursively(PreferKey.launcherIcon)
         }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            preferenceScreen.removePreferenceRecursively(PreferKey.dynamicColor)
+        }
         upPreferenceSummary(PreferKey.bgImage, getPrefString(PreferKey.bgImage))
         upPreferenceSummary(PreferKey.bgImageN, getPrefString(PreferKey.bgImageN))
         upPreferenceSummary(PreferKey.barElevation, AppConfig.elevation.toString())
@@ -141,6 +144,7 @@ class ThemeConfigFragment : PreferenceFragment(),
             PreferKey.launcherIcon -> LauncherIconHelp.changeIcon(getPrefString(key))
             PreferKey.transparentStatusBar -> recreateActivities()
             PreferKey.immNavigationBar -> recreateActivities()
+            PreferKey.dynamicColor -> recreateActivities()
             PreferKey.cPrimary,
             PreferKey.cAccent,
             PreferKey.cBackground,
@@ -311,6 +315,7 @@ class ThemeConfigFragment : PreferenceFragment(),
     }
 
     private fun recreateActivities() {
+        ThemeConfig.applyTheme(requireContext())
         postEvent(EventBus.RECREATE, "")
     }
 

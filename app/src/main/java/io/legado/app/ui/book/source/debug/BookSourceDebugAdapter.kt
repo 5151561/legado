@@ -7,6 +7,7 @@ import io.legado.app.R
 import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.databinding.ItemLogBinding
+import io.legado.app.ui.theme.legadoComponentTokens
 
 class BookSourceDebugAdapter(context: Context) :
     RecyclerAdapter<String, ItemLogBinding>(context) {
@@ -35,6 +36,7 @@ class BookSourceDebugAdapter(context: Context) :
                 textView.setTag(R.id.tag1, listener)
             }
             textView.text = item
+            textView.setTextColor(context.legadoComponentTokens().topAppBar.title)
         }
     }
 

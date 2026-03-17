@@ -20,6 +20,11 @@
    - 优先信息密度和批量操作效率
    - 使用统一的页面头部和列表行容器，不把每个动作都做成单独浮岛
 
+4. `汇总态`
+   - 典型页面：关于、书签、阅读记录、RSS 首页
+   - 使用 `LegadoPageHeader + LegadoSectionCard + LegadoListRow`
+   - 强调分组浏览和信息总览，不使用旧 Toolbar 拼装二级头部
+
 ## 容器规则
 
 - 页面头部：使用贴边 `surface` 容器，承载标题、搜索和筛选。
@@ -27,6 +32,14 @@
 - 区块容器：默认使用低存在感的 `surface` 分组，不默认上大圆角高海拔卡片。
 - 列表行：优先连续排列，通过留白、分组标题、选中态和分隔来组织信息。
 - 操作条：顶栏和底栏保持贴边 `surface`，不要与阅读页的悬浮浮岛混用。
+
+## 模板约束
+
+- `Settings`：统一使用 `SettingsMaterialScreen`
+- `Search Management`：统一使用 `LegadoSearchAppBar`
+- `Rule / Edit List`：统一使用 `RuleManageMaterialScreen` 或 `LegadoSmallAppBar`
+- `Detail / Summary`：统一使用 `LegadoDetailSummaryScaffold`
+- 新迁移页面不得新增旧 `TitleBar/Toolbar/SearchView` 形态；旧页面只允许继续兼容
 
 ## Token
 

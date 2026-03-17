@@ -27,6 +27,7 @@ data class SettingsItemUi(
     val summary: String? = null,
     val badge: String? = null,
     val checked: Boolean? = null,
+    val enabled: Boolean = true,
     val destructive: Boolean = false
 )
 
@@ -89,6 +90,7 @@ fun SettingsMaterialScreen(
                                     item.checked != null -> {
                                         LegadoSwitch(
                                             checked = item.checked,
+                                            enabled = item.enabled,
                                             onCheckedChange = { onSwitchChange(item.key, it) }
                                         )
                                     }
@@ -106,6 +108,7 @@ fun SettingsMaterialScreen(
                                     }
                                 }
                             },
+                            enabled = item.enabled,
                             onClick = { onItemClick(item.key) }
                         )
                         if (index != section.items.lastIndex) {

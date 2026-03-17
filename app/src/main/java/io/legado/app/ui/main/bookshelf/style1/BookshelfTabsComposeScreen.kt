@@ -63,6 +63,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.legado.app.R
 import io.legado.app.ui.compose.theme.LegadoPageDefaults
+import io.legado.app.ui.compose.theme.LegadoPageHeader
+import io.legado.app.ui.compose.theme.LegadoSectionCard
 import io.legado.app.ui.compose.theme.LegadoTopBarSurface
 import io.legado.app.ui.main.bookshelf.style2.BookGridCard
 import io.legado.app.ui.main.bookshelf.style2.BookListCard
@@ -191,94 +193,77 @@ internal fun BookshelfMainTopBar(
     var showAddMenu by remember { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
     LegadoTopBarSurface {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        start = LegadoPageDefaults.HorizontalPadding,
-                        end = 8.dp,
-                        top = 8.dp,
-                        bottom = 8.dp
-                    ),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "我的书架",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-                IconButton(onClick = onSearchClick) {
-                    Icon(
-                        imageVector = Icons.Outlined.Search,
-                        contentDescription = null
-                    )
-                }
-                Box {
-                    IconButton(onClick = { showAddMenu = true }) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            LegadoPageHeader(
+                title = "我的书架",
+                subtitle = "分组、搜索和批量管理你的阅读清单",
+                actions = {
+                    IconButton(onClick = onSearchClick) {
                         Icon(
-                            imageVector = Icons.Outlined.Add,
+                            imageVector = Icons.Outlined.Search,
                             contentDescription = null
                         )
                     }
-                    DropdownMenu(
-                        expanded = showAddMenu,
-                        onDismissRequest = { showAddMenu = false }
-                    ) {
-                        BookshelfAddAction.entries.forEach { action ->
-                            DropdownMenuItem(
-                                text = { Text(text = androidx.compose.ui.res.stringResource(action.labelRes)) },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = addActionIcon(action),
-                                        contentDescription = null
-                                    )
-                                },
-                                onClick = {
-                                    showAddMenu = false
-                                    onAddActionClick(action)
-                                }
+                    Box {
+                        IconButton(onClick = { showAddMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Outlined.Add,
+                                contentDescription = null
                             )
+                        }
+                        DropdownMenu(
+                            expanded = showAddMenu,
+                            onDismissRequest = { showAddMenu = false }
+                        ) {
+                            BookshelfAddAction.entries.forEach { action ->
+                                DropdownMenuItem(
+                                    text = { Text(text = androidx.compose.ui.res.stringResource(action.labelRes)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = addActionIcon(action),
+                                            contentDescription = null
+                                        )
+                                    },
+                                    onClick = {
+                                        showAddMenu = false
+                                        onAddActionClick(action)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    Box {
+                        IconButton(onClick = { showOverflowMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Outlined.MoreVert,
+                                contentDescription = null
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showOverflowMenu,
+                            onDismissRequest = { showOverflowMenu = false }
+                        ) {
+                            BookshelfOverflowAction.entries.forEach { action ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(text = androidx.compose.ui.res.stringResource(action.labelRes))
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = overflowActionIcon(action),
+                                            contentDescription = null
+                                        )
+                                    },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        onOverflowActionClick(action)
+                                    }
+                                )
+                            }
                         }
                     }
                 }
-                Box {
-                    IconButton(onClick = { showOverflowMenu = true }) {
-                        Icon(
-                            imageVector = Icons.Outlined.MoreVert,
-                            contentDescription = null
-                        )
-                    }
-                }
-                DropdownMenu(
-                    expanded = showOverflowMenu,
-                    onDismissRequest = { showOverflowMenu = false }
-                ) {
-                    BookshelfOverflowAction.entries.forEach { action ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(text = androidx.compose.ui.res.stringResource(action.labelRes))
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = overflowActionIcon(action),
-                                    contentDescription = null
-                                )
-                            },
-                            onClick = {
-                                showOverflowMenu = false
-                                onOverflowActionClick(action)
-                            }
-                        )
-                    }
-                }
-            }
+            )
         }
     }
 }

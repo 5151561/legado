@@ -481,6 +481,8 @@
     <string name="theme">主题</string>
     <string name="theme_mode">主题模式</string>
     <string name="theme_mode_desc">选择主题模式</string>
+    <string name="dynamic_color">动态取色</string>
+    <string name="dynamic_color_summary">在 Android 12 及以上使用壁纸配色生成应用主题</string>
     <string name="join_qq_group">加入 QQ 群</string>
     <string name="bg_image_per">获取背景图片需存储权限</string>
     <string name="input_book_source_url">输入书源网址</string>

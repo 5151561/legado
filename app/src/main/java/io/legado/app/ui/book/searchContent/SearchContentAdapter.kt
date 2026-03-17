@@ -7,14 +7,13 @@ import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.databinding.ItemSearchListBinding
 import io.legado.app.ui.theme.legadoComponentTokens
-import io.legado.app.utils.getCompatColor
 import io.legado.app.utils.hexString
 
 
 class SearchContentAdapter(context: Context, val callback: Callback) :
     RecyclerAdapter<SearchResult, ItemSearchListBinding>(context) {
 
-    val textColor = context.getCompatColor(R.color.primaryText).hexString.substring(2)
+    val textColor = context.legadoComponentTokens().topAppBar.title.hexString.substring(2)
     val accentColor = context.legadoComponentTokens().shared.accent.hexString.substring(2)
 
     override fun getViewBinding(parent: ViewGroup): ItemSearchListBinding {

@@ -2,16 +2,7 @@ package io.legado.app.ui.main.rss
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -32,6 +23,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,8 +41,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import io.legado.app.data.entities.RssSource
-import io.legado.app.ui.compose.theme.LegadoOneUIScaffold
+import io.legado.app.ui.compose.theme.LegadoPageDefaults
+import io.legado.app.ui.compose.theme.LegadoPageHeader
 import io.legado.app.ui.compose.theme.LegadoSearchField
+import io.legado.app.ui.compose.theme.LegadoSectionCard
 import io.legado.app.ui.widget.image.CoverImageView
 
 @Composable
@@ -63,51 +57,63 @@ fun RssComposeScreen(
 ) {
     var searchQuery by remember { mutableStateOf("") }
 
-    LegadoOneUIScaffold(
-        title = "订阅",
-        actions = {
-            IconButton(onClick = { onTopAction(RssTopAction.Star) }) {
-                Icon(Icons.Default.Star, contentDescription = "收藏")
-            }
-            IconButton(onClick = { onTopAction(RssTopAction.Config) }) {
-                Icon(Icons.Default.Settings, contentDescription = "设置")
-            }
+    Scaffold(
+        topBar = {
+            LegadoPageHeader(
+                title = "订阅",
+                subtitle = "订阅源、收藏和最新内容入口",
+                actions = {
+                    IconButton(onClick = { onTopAction(RssTopAction.Star) }) {
+                        Icon(Icons.Default.Star, contentDescription = "收藏")
+                    }
+                    IconButton(onClick = { onTopAction(RssTopAction.Config) }) {
+                        Icon(Icons.Default.Settings, contentDescription = "设置")
+                    }
+                }
+            )
         }
     ) { paddingValues ->
         LazyVerticalGrid(
             columns = GridCells.Fixed(4),
-            contentPadding = paddingValues,
+            contentPadding = PaddingValues(
+                start = LegadoPageDefaults.HorizontalPadding,
+                top = paddingValues.calculateTopPadding(),
+                end = LegadoPageDefaults.HorizontalPadding,
+                bottom = 24.dp
+            ),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxSize()
         ) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                LegadoSearchField(
-                    query = searchQuery,
-                    placeholder = "搜索订阅源",
-                    onQueryChange = {
-                        searchQuery = it
-                        onSearchQueryChange(it)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                )
+                LegadoSectionCard {
+                    LegadoSearchField(
+                        query = searchQuery,
+                        placeholder = "搜索订阅源",
+                        onQueryChange = {
+                            searchQuery = it
+                            onSearchQueryChange(it)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
 
             if (rssSources.isEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 100.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "没有找到订阅源",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    LegadoSectionCard {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 72.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "没有找到订阅源",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             } else {
@@ -134,7 +140,7 @@ fun RssItem(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .padding(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -144,8 +150,8 @@ fun RssItem(
                 modifier = Modifier
                     .aspectRatio(1f)
                     .fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface
             ) {
                 AndroidView(
                     modifier = Modifier.fillMaxSize(),

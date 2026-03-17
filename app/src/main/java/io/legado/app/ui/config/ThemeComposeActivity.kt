@@ -121,6 +121,7 @@ class ThemeComposeActivity : VMBaseActivity<ActivityThemeComposeBinding, ConfigV
                     SettingsItemUi("welcomeStyle", Icons.Rounded.Palette, getString(R.string.welcome_style), getString(R.string.welcome_style_summary)),
                     SettingsItemUi(PreferKey.transparentStatusBar, Icons.Rounded.Palette, getString(R.string.immersion_status_bar), getString(R.string.status_bar_immersion), checked = getPrefBoolean(PreferKey.transparentStatusBar, true)),
                     SettingsItemUi(PreferKey.immNavigationBar, Icons.Rounded.Palette, getString(R.string.imm_navigation_bar), getString(R.string.imm_navigation_bar_s), checked = getPrefBoolean(PreferKey.immNavigationBar, true)),
+                    SettingsItemUi(PreferKey.dynamicColor, Icons.Rounded.Palette, getString(R.string.dynamic_color), getString(R.string.dynamic_color_summary), checked = getPrefBoolean(PreferKey.dynamicColor, false), enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S),
                     SettingsItemUi(PreferKey.barElevation, Icons.Rounded.Palette, getString(R.string.bar_elevation), getString(R.string.bar_elevation_s, AppConfig.elevation.toString())),
                     SettingsItemUi(PreferKey.fontScale, Icons.Rounded.Palette, getString(R.string.font_scale), getFontScaleSummary()),
                     SettingsItemUi("coverConfig", Icons.Rounded.Palette, getString(R.string.cover_config), getString(R.string.cover_config_summary)),
@@ -188,7 +189,8 @@ class ThemeComposeActivity : VMBaseActivity<ActivityThemeComposeBinding, ConfigV
         putPrefBoolean(key, checked)
         when (key) {
             PreferKey.transparentStatusBar,
-            PreferKey.immNavigationBar -> recreateActivities()
+            PreferKey.immNavigationBar,
+            PreferKey.dynamicColor -> recreateActivities()
         }
         refreshState()
     }
@@ -359,6 +361,7 @@ class ThemeComposeActivity : VMBaseActivity<ActivityThemeComposeBinding, ConfigV
     }
 
     private fun recreateActivities() {
+        ThemeConfig.applyTheme(this)
         postEvent(EventBus.RECREATE, "")
     }
 

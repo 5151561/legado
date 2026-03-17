@@ -1,6 +1,7 @@
 package io.legado.app.ui.theme
 
 import android.content.Context
+import android.os.Build
 import androidx.annotation.ColorInt
 import androidx.compose.ui.graphics.Color
 import io.legado.app.R
@@ -16,6 +17,7 @@ import kotlin.math.roundToInt
 internal data class ThemeInputSnapshot(
     val isDark: Boolean,
     val isEInk: Boolean,
+    val useDynamicColor: Boolean,
     val isTransparentStatusBar: Boolean,
     val immNavigationBar: Boolean,
     val isPureBlack: Boolean,
@@ -62,7 +64,7 @@ object ThemeResolver {
 
     private const val TRANSPARENT = 0x00000000
 
-    internal var dynamicThemeProvider: DynamicThemeProvider? = null
+    internal var dynamicThemeProvider: DynamicThemeProvider? = MonetDynamicThemeProvider
 
     fun resolve(context: Context = appCtx): LegadoThemeState {
         return resolve(snapshot(context))
@@ -90,6 +92,7 @@ object ThemeResolver {
         return ThemeInputSnapshot(
             isDark = isDark,
             isEInk = AppConfig.isEInkMode,
+            useDynamicColor = AppConfig.dynamicColor,
             isTransparentStatusBar = AppConfig.isTransparentStatusBar,
             immNavigationBar = AppConfig.immNavigationBar,
             isPureBlack = context.getPrefBoolean(PreferKey.pureBlack, false),
@@ -340,5 +343,60 @@ object ThemeResolver {
     private fun green(@ColorInt color: Int): Int = color ushr 8 and 0xFF
 
     private fun blue(@ColorInt color: Int): Int = color and 0xFF
+
+    private object MonetDynamicThemeProvider : DynamicThemeProvider {
+        override fun transform(input: ThemeInputSnapshot, draft: ThemeDraft): ThemeDraft? {
+            if (!input.useDynamicColor || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                return null
+            }
+            val palette = DynamicPalette.fromSystem(input.isDark)
+            return draft.copy(
+                primary = palette.primary,
+                primaryContainer = palette.primaryContainer,
+                secondary = palette.secondary,
+                secondaryContainer = palette.secondaryContainer,
+                tertiary = palette.tertiary,
+                tertiaryContainer = palette.tertiaryContainer,
+                onSurface = palette.onSurface,
+                onSurfaceVariant = palette.onSurfaceVariant,
+                outline = palette.outline,
+                accentCompat = palette.secondary,
+                toolbar = palette.primary,
+                textPrimaryCompat = palette.onSurface,
+                textSecondaryCompat = palette.onSurfaceVariant
+            )
+        }
+    }
+
+    private data class DynamicPalette(
+        @param:ColorInt val primary: Int,
+        @param:ColorInt val primaryContainer: Int,
+        @param:ColorInt val secondary: Int,
+        @param:ColorInt val secondaryContainer: Int,
+        @param:ColorInt val tertiary: Int,
+        @param:ColorInt val tertiaryContainer: Int,
+        @param:ColorInt val onSurface: Int,
+        @param:ColorInt val onSurfaceVariant: Int,
+        @param:ColorInt val outline: Int
+    ) {
+        companion object {
+            fun fromSystem(darkTheme: Boolean): DynamicPalette {
+                return DynamicPalette(
+                    primary = systemColor(if (darkTheme) android.R.color.system_accent1_200 else android.R.color.system_accent1_600),
+                    primaryContainer = systemColor(if (darkTheme) android.R.color.system_accent1_700 else android.R.color.system_accent1_100),
+                    secondary = systemColor(if (darkTheme) android.R.color.system_accent2_200 else android.R.color.system_accent2_600),
+                    secondaryContainer = systemColor(if (darkTheme) android.R.color.system_accent2_700 else android.R.color.system_accent2_100),
+                    tertiary = systemColor(if (darkTheme) android.R.color.system_accent3_200 else android.R.color.system_accent3_600),
+                    tertiaryContainer = systemColor(if (darkTheme) android.R.color.system_accent3_700 else android.R.color.system_accent3_100),
+                    onSurface = systemColor(if (darkTheme) android.R.color.system_neutral1_100 else android.R.color.system_neutral1_900),
+                    onSurfaceVariant = systemColor(if (darkTheme) android.R.color.system_neutral2_300 else android.R.color.system_neutral2_700),
+                    outline = systemColor(android.R.color.system_neutral2_500)
+                )
+            }
+
+            @ColorInt
+            private fun systemColor(id: Int): Int = appCtx.getCompatColor(id)
+        }
+    }
 
 }

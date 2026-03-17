@@ -12,10 +12,6 @@ import androidx.appcompat.widget.PopupMenu
 import io.legado.app.R
 import io.legado.app.databinding.ViewSelectActionBarBinding
 import io.legado.app.lib.theme.TintHelper
-import io.legado.app.lib.theme.bottomBackground
-import io.legado.app.lib.theme.elevation
-import io.legado.app.lib.theme.getPrimaryTextColor
-import io.legado.app.lib.theme.getSecondaryDisabledTextColor
 import io.legado.app.ui.theme.legadoComponentTokens
 import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.applyNavigationBarPadding
@@ -28,10 +24,6 @@ class SelectActionBar @JvmOverloads constructor(
     attrs: AttributeSet? = null
 ) : FrameLayout(context, attrs) {
 
-    private val bgIsLight = ColorUtils.isColorLight(context.bottomBackground)
-    private val primaryTextColor = context.getPrimaryTextColor(bgIsLight)
-    private val disabledColor = context.getSecondaryDisabledTextColor(bgIsLight)
-
     private var callBack: CallBack? = null
     private var selMenu: PopupMenu? = null
     private val binding = ViewSelectActionBarBinding
@@ -39,15 +31,7 @@ class SelectActionBar @JvmOverloads constructor(
 
     init {
         if (!isInEditMode) {
-            setBackgroundColor(context.bottomBackground)
-            elevation = context.elevation
-            binding.cbSelectedAll.setTextColor(primaryTextColor)
-            TintHelper.setTint(
-                binding.cbSelectedAll,
-                context.legadoComponentTokens().shared.accent,
-                !bgIsLight
-            )
-            binding.ivMenuMore.setColorFilter(disabledColor, PorterDuff.Mode.SRC_IN)
+            applyLegadoStyle()
             binding.cbSelectedAll.setOnUserCheckedChangeListener { isChecked ->
                 callBack?.selectAll(isChecked)
             }
@@ -56,6 +40,25 @@ class SelectActionBar @JvmOverloads constructor(
             binding.ivMenuMore.setOnClickListener { selMenu?.show() }
             applyNavigationBarPadding()
         }
+    }
+
+    private fun applyLegadoStyle() {
+        val tokens = context.legadoComponentTokens()
+        val containerColor = tokens.tabs.container
+        val textColor = tokens.topAppBar.title
+        val disabledColor = tokens.input.disabled
+        val containerIsLight = ColorUtils.isColorLight(containerColor)
+
+        setBackgroundColor(containerColor)
+        binding.cbSelectedAll.setTextColor(textColor)
+        TintHelper.setTint(
+            binding.cbSelectedAll,
+            tokens.shared.accent,
+            !containerIsLight
+        )
+        binding.btnRevertSelection.setTextColor(tokens.shared.accent)
+        binding.btnSelectActionMain.setTextColor(tokens.shared.accent)
+        binding.ivMenuMore.setColorFilter(disabledColor, PorterDuff.Mode.SRC_IN)
     }
 
     fun setMainActionText(text: String) = binding.run {
@@ -108,14 +111,15 @@ class SelectActionBar @JvmOverloads constructor(
     }
 
     private fun setMenuClickable(isClickable: Boolean) = binding.run {
+        val tokens = context.legadoComponentTokens()
         btnRevertSelection.isEnabled = isClickable
         btnRevertSelection.isClickable = isClickable
         btnSelectActionMain.isEnabled = isClickable
         btnSelectActionMain.isClickable = isClickable
         if (isClickable) {
-            ivMenuMore.setColorFilter(primaryTextColor, PorterDuff.Mode.SRC_IN)
+            ivMenuMore.setColorFilter(tokens.topAppBar.title, PorterDuff.Mode.SRC_IN)
         } else {
-            ivMenuMore.setColorFilter(disabledColor, PorterDuff.Mode.SRC_IN)
+            ivMenuMore.setColorFilter(tokens.input.disabled, PorterDuff.Mode.SRC_IN)
         }
         ivMenuMore.isEnabled = isClickable
         ivMenuMore.isClickable = isClickable

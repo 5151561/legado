@@ -14,13 +14,16 @@ import io.legado.app.databinding.ActivitySourceDebugBinding
 import io.legado.app.help.source.clearExploreKindsCache
 import io.legado.app.help.source.exploreKinds
 import io.legado.app.lib.dialogs.selector
-import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.qrcode.QrCodeResult
+import io.legado.app.ui.theme.applyLegadoAssistChipStyle
+import io.legado.app.ui.theme.applyLegadoPageListStyle
+import io.legado.app.ui.theme.applyLegadoPageSearchStyle
+import io.legado.app.ui.theme.applyLegadoPageSurfaceStyle
+import io.legado.app.ui.theme.applyLegadoTopAppBarStyle
 import io.legado.app.ui.theme.legadoComponentTokens
 import io.legado.app.ui.widget.dialog.TextDialog
 import io.legado.app.utils.applyNavigationBarPadding
 import io.legado.app.utils.launch
-import io.legado.app.utils.setEdgeEffectColor
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.showHelp
 import io.legado.app.utils.toastOnUi
@@ -45,6 +48,8 @@ class BookSourceDebugActivity : VMBaseActivity<ActivitySourceDebugBinding, BookS
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
+        binding.llContent.applyLegadoPageSurfaceStyle()
+        binding.titleBar.applyLegadoTopAppBarStyle()
         initRecyclerView()
         initSearchView()
         viewModel.init(intent.getStringExtra("key")) {
@@ -61,13 +66,15 @@ class BookSourceDebugActivity : VMBaseActivity<ActivitySourceDebugBinding, BookS
     }
 
     private fun initRecyclerView() {
-        binding.recyclerView.setEdgeEffectColor(primaryColor)
+        binding.recyclerView.applyLegadoPageListStyle()
         binding.recyclerView.adapter = adapter
         binding.recyclerView.applyNavigationBarPadding()
         binding.rotateLoading.loadingColor = legadoComponentTokens().shared.accent
+        binding.help.applyLegadoPageSurfaceStyle()
     }
 
     private fun initSearchView() {
+        searchView.applyLegadoPageSearchStyle()
         searchView.onActionViewExpanded()
         searchView.isSubmitButtonEnabled = true
         searchView.queryHint = getString(R.string.search_book_key)
@@ -91,6 +98,12 @@ class BookSourceDebugActivity : VMBaseActivity<ActivitySourceDebugBinding, BookS
 
     @SuppressLint("SetTextI18n")
     private fun initHelpView() {
+        binding.textMy.applyLegadoAssistChipStyle()
+        binding.textXt.applyLegadoAssistChipStyle()
+        binding.textFx.applyLegadoAssistChipStyle()
+        binding.textInfo.applyLegadoAssistChipStyle()
+        binding.textToc.applyLegadoAssistChipStyle()
+        binding.textContent.applyLegadoAssistChipStyle()
         viewModel.bookSource?.ruleSearch?.checkKeyWord?.let {
             if (it.isNotBlank()) {
                 binding.textMy.text = it

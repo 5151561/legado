@@ -27,12 +27,14 @@ import io.legado.app.help.book.isLocal
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.LocalConfig
 import io.legado.app.lib.dialogs.alert
-import io.legado.app.lib.theme.primaryColor
-import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.ui.book.group.GroupManageDialog
 import io.legado.app.ui.book.group.GroupSelectDialog
 import io.legado.app.ui.book.info.BookInfoActivity
 import io.legado.app.ui.file.HandleFileContract
+import io.legado.app.ui.theme.applyLegadoPageListStyle
+import io.legado.app.ui.theme.applyLegadoPageSearchStyle
+import io.legado.app.ui.theme.applyLegadoPageSurfaceStyle
+import io.legado.app.ui.theme.applyLegadoTopAppBarStyle
 import io.legado.app.ui.widget.SelectActionBar
 import io.legado.app.ui.widget.dialog.WaitDialog
 import io.legado.app.ui.widget.recycler.DragSelectTouchHelper
@@ -102,6 +104,8 @@ class BookshelfManageActivity :
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         viewModel.groupId = intent.getLongExtra("groupId", -1)
+        binding.root.applyLegadoPageSurfaceStyle()
+        binding.titleBar.applyLegadoTopAppBarStyle()
         lifecycleScope.launch {
             viewModel.groupName = withContext(IO) {
                 appDb.bookGroupDao.getByID(viewModel.groupId)?.groupName
@@ -160,7 +164,7 @@ class BookshelfManageActivity :
     }
 
     private fun initSearchView() {
-        searchView.applyTint(primaryTextColor)
+        searchView.applyLegadoPageSearchStyle()
         searchView.isSubmitButtonEnabled = true
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
@@ -176,7 +180,7 @@ class BookshelfManageActivity :
     }
 
     private fun initRecyclerView() {
-        binding.recyclerView.setEdgeEffectColor(primaryColor)
+        binding.recyclerView.applyLegadoPageListStyle()
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.addItemDecoration(VerticalDivider(this))
         binding.recyclerView.adapter = adapter
