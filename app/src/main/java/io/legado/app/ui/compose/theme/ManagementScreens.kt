@@ -4,39 +4,15 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForwardIos
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,8 +24,139 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * 1. 搜索顶栏 (Search Bar as Top Bar)
+ * 适用于：书源管理、替换净化、RSS、发现页
+ * 形态：M3 风格大胶囊（Docked Search Bar），返回键和操作按钮均在胶囊内部。
+ * 胶囊直接作为顶栏底衬，悬浮在界面顶部，具有良好的单手操作性和现代感。
+ */
 @Composable
-internal fun LegadoPageHeader(
+fun LegadoSearchAppBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    placeholder: String,
+    onBackClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+    actions: @Composable RowScope.() -> Unit = {}
+) {
+    LegadoTopBarSurface(
+        modifier = modifier
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(top = 12.dp, bottom = 8.dp, start = 12.dp, end = 12.dp)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.95f),
+            tonalElevation = 2.dp,
+            shadowElevation = 0.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (onBackClick != null) {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = "返回",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                } else {
+                    Spacer(modifier = Modifier.width(16.dp))
+                }
+
+                BasicTextField(
+                    value = query,
+                    onValueChange = onQueryChange,
+                    textStyle = TextStyle(
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Normal
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                    decorationBox = { innerTextField ->
+                        if (query.isEmpty()) {
+                            Text(
+                                text = placeholder,
+                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
+                            )
+                        }
+                        innerTextField()
+                    }
+                )
+
+                Row(
+                    modifier = Modifier.padding(end = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    content = actions
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 2. 小型标准顶栏 (Small Top App Bar)
+ * 适用于：规则编辑页、详情页、TXT 目录规则
+ * 特点：严格遵循 M3 Small Top App Bar 规范，标题左对齐。
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LegadoSmallAppBar(
+    title: String,
+    onBackClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+    actions: @Composable RowScope.() -> Unit = {}
+) {
+    TopAppBar(
+        title = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Normal
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
+        navigationIcon = {
+            if (onBackClick != null) {
+                IconButton(onClick = onBackClick) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = "返回"
+                    )
+                }
+            }
+        },
+        actions = actions,
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+            actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        ),
+        modifier = modifier.windowInsetsPadding(WindowInsets.statusBars)
+    )
+}
+
+/**
+ * 3. “我的”界面风格顶栏 (Large Header)
+ * 适用于：主页“我的”、设置主页
+ * 特点：沉浸式大标题布局。
+ */
+@Composable
+fun LegadoPageHeader(
     title: String,
     subtitle: String? = null,
     onBackClick: (() -> Unit)? = null,
@@ -60,51 +167,44 @@ internal fun LegadoPageHeader(
     LegadoTopBarSurface(
         modifier = modifier.windowInsetsPadding(WindowInsets.statusBars)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(
-                    start = 4.dp,
-                    end = 12.dp,
-                    top = 8.dp,
-                    bottom = 8.dp
-                ),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(start = 20.dp, end = 12.dp, top = 24.dp, bottom = 16.dp)
         ) {
-            if (onBackClick != null) {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = null
-                    )
-                }
-                Spacer(modifier = Modifier.width(4.dp))
-            }
-            Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Medium
+                    style = MaterialTheme.typography.displaySmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = (-0.5).sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-                if (!subtitle.isNullOrBlank()) {
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    content = actions
+                )
             }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                content = actions
-            )
+            if (!subtitle.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                )
+            }
+            belowTitle()
         }
-        belowTitle()
     }
 }
 
 @Composable
-internal fun LegadoSearchField(
+fun LegadoSearchField(
     query: String,
     placeholder: String,
     onQueryChange: (String) -> Unit,
@@ -145,7 +245,7 @@ internal fun LegadoSearchField(
 }
 
 @Composable
-internal fun LegadoMenuButton(
+fun LegadoMenuButton(
     icon: @Composable () -> Unit,
     content: @Composable ((() -> Unit)) -> Unit
 ) {
@@ -188,7 +288,7 @@ internal fun LegadoBottomBar(
 }
 
 @Composable
-internal fun LegadoStatusChip(
+fun LegadoStatusChip(
     text: String,
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.secondaryContainer,
@@ -228,7 +328,7 @@ internal fun LegadoLeadingIcon(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-internal fun LegadoListRow(
+fun LegadoListRow(
     title: String,
     modifier: Modifier = Modifier,
     summary: String? = null,
@@ -305,7 +405,7 @@ internal fun LegadoListRow(
 }
 
 @Composable
-internal fun LegadoItemDivider(
+fun LegadoItemDivider(
     modifier: Modifier = Modifier,
     startIndent: Int = 88
 ) {
@@ -316,7 +416,7 @@ internal fun LegadoItemDivider(
 }
 
 @Composable
-internal fun LegadoEmptyState(
+fun LegadoEmptyState(
     title: String,
     summary: String,
     modifier: Modifier = Modifier

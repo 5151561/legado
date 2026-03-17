@@ -19,8 +19,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
@@ -138,6 +136,7 @@ class TxtTocRuleActivity : VMBaseActivity<ActivityTxtTocRuleBinding, TxtTocRuleV
                         RuleManageSheetAction("export", "导出选中", Icons.Rounded.Publish)
                     ),
                     onBatchAction = ::handleBatchAction,
+                    useSmallAppBar = true,
                     topBarContent = {
                         IconButton(onClick = { showDialogFragment(TxtTocRuleEditDialog()) }) {
                             Icon(Icons.Rounded.Add, contentDescription = null)
@@ -199,16 +198,6 @@ class TxtTocRuleActivity : VMBaseActivity<ActivityTxtTocRuleBinding, TxtTocRuleV
                                 }
                             )
                         }
-                    },
-                    headerBottomContent = {
-                        io.legado.app.ui.compose.theme.LegadoSearchField(
-                            query = searchQuery,
-                            placeholder = "搜索规则或示例",
-                            onQueryChange = { searchQuery = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
-                        )
                     },
                     itemMenuContent = { item, dismiss ->
                         DropdownMenuItem(

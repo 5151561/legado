@@ -10,20 +10,15 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
@@ -38,7 +33,6 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Checkbox
@@ -58,13 +52,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.legado.app.data.entities.RssSource
 import io.legado.app.ui.compose.theme.LegadoBatchActionSheet
-import io.legado.app.ui.compose.theme.LegadoSearchField
+import io.legado.app.ui.compose.theme.LegadoMenuButton
+import io.legado.app.ui.compose.theme.LegadoSearchAppBar
 import io.legado.app.ui.compose.theme.LegadoSelectionBottomBar
 import io.legado.app.ui.compose.theme.LegadoSwitch
 
@@ -124,13 +118,42 @@ fun RssSourceScreen(
 
     Scaffold(
         topBar = {
-            TopSearchBar(
+            LegadoSearchAppBar(
                 query = searchQuery,
-                groups = groups,
                 onQueryChange = onSearchQueryChange,
+                placeholder = "搜索订阅源",
                 onBackClick = onBackClick,
-                onTopAction = onTopAction,
-                onGroupFilterClick = onGroupFilterClick
+                actions = {
+                    LegadoMenuButton(
+                        icon = {
+                            Icon(Icons.Default.Groups, contentDescription = "分组")
+                        }
+                    ) { dismiss ->
+                        GroupMenuContent(
+                            groups = groups,
+                            onAction = {
+                                onTopAction(it)
+                                dismiss()
+                            },
+                            onGroupClick = {
+                                onGroupFilterClick(it)
+                                dismiss()
+                            }
+                        )
+                    }
+                    LegadoMenuButton(
+                        icon = {
+                            Icon(Icons.Default.MoreVert, contentDescription = "更多")
+                        }
+                    ) { dismiss ->
+                        MoreMenuContent(
+                            onAction = {
+                                onTopAction(it)
+                                dismiss()
+                            }
+                        )
+                    }
+                }
             )
         },
         bottomBar = {
@@ -202,64 +225,6 @@ fun RssSourceScreen(
                 onAction = {
                     onBatchAction(it)
                     showBottomSheet = false
-                }
-            )
-        }
-    }
-}
-
-@Composable
-private fun TopSearchBar(
-    query: String,
-    groups: List<String>,
-    onQueryChange: (String) -> Unit,
-    onBackClick: () -> Unit,
-    onTopAction: (RssSourceTopAction) -> Unit,
-    onGroupFilterClick: (String) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.statusBars)
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 4.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onBackClick) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-        }
-        LegadoSearchField(
-            query = query,
-            placeholder = "搜索订阅源",
-            onQueryChange = onQueryChange,
-            modifier = Modifier.weight(1f)
-        )
-        AnchoredActionMenuButton(
-            icon = {
-                Icon(Icons.Default.Groups, contentDescription = "分组")
-            }
-        ) { dismiss ->
-            GroupMenuContent(
-                groups = groups,
-                onAction = {
-                    onTopAction(it)
-                    dismiss()
-                },
-                onGroupClick = {
-                    onGroupFilterClick(it)
-                    dismiss()
-                }
-            )
-        }
-        AnchoredActionMenuButton(
-            icon = {
-                Icon(Icons.Default.MoreVert, contentDescription = "更多")
-            }
-        ) { dismiss ->
-            MoreMenuContent(
-                onAction = {
-                    onTopAction(it)
-                    dismiss()
                 }
             )
         }
@@ -341,25 +306,6 @@ private fun MoreMenuContent(
         onClick = { onAction(RssSourceTopAction.Help) },
         leadingIcon = { Icon(Icons.AutoMirrored.Filled.Help, null) }
     )
-}
-
-@Composable
-private fun AnchoredActionMenuButton(
-    icon: @Composable () -> Unit,
-    content: @Composable ((() -> Unit)) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        IconButton(onClick = { expanded = true }) {
-            icon()
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            content { expanded = false }
-        }
-    }
 }
 
 @Composable

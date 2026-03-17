@@ -1,26 +1,18 @@
 package io.legado.app.ui.compose.theme
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,7 +38,6 @@ data class RuleManageSheetAction(
     val icon: ImageVector
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RuleManageMaterialScreen(
     title: String,
@@ -64,23 +55,28 @@ fun RuleManageMaterialScreen(
     batchActions: List<RuleManageSheetAction>,
     onBatchAction: (String) -> Unit,
     topBarContent: @Composable () -> Unit,
-    headerBottomContent: @Composable ColumnScope.() -> Unit = {},
+    headerBottomContent: @Composable () -> Unit = {},
+    useSmallAppBar: Boolean = false,
     itemMenuContent: @Composable ((RuleManageItemUi, () -> Unit) -> Unit)
 ) {
     var showBatchSheet by remember { mutableStateOf(false) }
     val totalCount = items.size
-    val isAllSelected = totalCount > 0 && selectedCount == totalCount
-    val hasSelection = selectedCount > 0
 
     Scaffold(
         topBar = {
-            Column {
+            if (useSmallAppBar) {
+                LegadoSmallAppBar(
+                    title = title,
+                    onBackClick = onBackClick,
+                    actions = { topBarContent() }
+                )
+            } else {
                 LegadoPageHeader(
                     title = title,
                     subtitle = subtitle,
                     onBackClick = onBackClick,
                     actions = { topBarContent() },
-                    belowTitle = headerBottomContent
+                    belowTitle = { headerBottomContent() }
                 )
             }
         },
@@ -111,24 +107,20 @@ fun RuleManageMaterialScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        vertical = 0.dp
-                    )
+                    contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    item {
-                        Column {
-                            items.forEachIndexed { index, item ->
-                                RuleManageRow(
-                                    item = item,
-                                    onClick = { onItemClick(item) },
-                                    onToggleSelect = { onToggleSelect(item, it) },
-                                    onToggleEnabled = { onToggleEnabled(item, it) },
-                                    onEdit = { onEditItem(item) },
-                                    menuContent = { dismiss -> itemMenuContent(item, dismiss) }
-                                )
-                                if (index != items.lastIndex) {
-                                    LegadoItemDivider(startIndent = 68)
-                                }
+                    items.forEachIndexed { index, item ->
+                        item {
+                            RuleManageRow(
+                                item = item,
+                                onClick = { onItemClick(item) },
+                                onToggleSelect = { onToggleSelect(item, it) },
+                                onToggleEnabled = { onToggleEnabled(item, it) },
+                                onEdit = { onEditItem(item) },
+                                menuContent = { dismiss -> itemMenuContent(item, dismiss) }
+                            )
+                            if (index != items.lastIndex) {
+                                LegadoItemDivider(startIndent = 68)
                             }
                         }
                     }
