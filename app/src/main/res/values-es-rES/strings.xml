@@ -1229,4 +1229,6 @@
     <string name="auto_check_new_backup_t">自动检查新备份</string>
     <string name="auto_check_new_backup_s">打开软件时检查是否有新备份，有新备份时提示是否更新</string>
     <string name="sys_image_picker">系统图片选择器</string>
+    <string name="dynamic_color">Color dinámico</string>
+    <string name="dynamic_color_summary">Usar los colores del fondo de pantalla de Android 12+ para el tema de la app</string>
 </resources>

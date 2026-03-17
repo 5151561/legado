@@ -3,7 +3,9 @@ package io.legado.app.ui.theme
 import android.content.Context
 import android.os.Build
 import androidx.annotation.ColorInt
+import androidx.annotation.RequiresApi
 import androidx.compose.ui.graphics.Color
+import androidx.core.content.res.ResourcesCompat
 import io.legado.app.R
 import io.legado.app.constant.PreferKey
 import io.legado.app.help.config.AppConfig
@@ -61,6 +63,8 @@ internal fun interface DynamicThemeProvider {
 }
 
 object ThemeResolver {
+
+    private const val DefaultDarkenFactor = 0.9f
 
     private const val TRANSPARENT = 0x00000000
 
@@ -243,14 +247,14 @@ object ThemeResolver {
         val statusBar = if (input.isTransparentStatusBar || input.hasBackgroundImage) {
             TRANSPARENT
         } else if (input.isDark) {
-            darken(primary, 0.9f)
+            darken(primary)
         } else {
             primary
         }
         val navigationBar = when {
             input.hasBackgroundImage && input.immNavigationBar -> TRANSPARENT
             input.immNavigationBar -> bottomBackground
-            else -> darken(bottomBackground, 0.9f)
+            else -> darken(bottomBackground)
         }
 
         return ThemeDraft(
@@ -287,7 +291,7 @@ object ThemeResolver {
     }
 
     @ColorInt
-    private fun darken(@ColorInt color: Int, factor: Float): Int {
+    private fun darken(@ColorInt color: Int, factor: Float = DefaultDarkenFactor): Int {
         val alpha = alpha(color)
         val r = (red(color) * factor).roundToInt().coerceIn(0, 255)
         val g = (green(color) * factor).roundToInt().coerceIn(0, 255)
@@ -380,6 +384,7 @@ object ThemeResolver {
         @param:ColorInt val outline: Int
     ) {
         companion object {
+            @RequiresApi(Build.VERSION_CODES.S)
             fun fromSystem(darkTheme: Boolean): DynamicPalette {
                 return DynamicPalette(
                     primary = systemColor(if (darkTheme) android.R.color.system_accent1_200 else android.R.color.system_accent1_600),
@@ -394,8 +399,11 @@ object ThemeResolver {
                 )
             }
 
+            @RequiresApi(Build.VERSION_CODES.S)
             @ColorInt
-            private fun systemColor(id: Int): Int = appCtx.getCompatColor(id)
+            private fun systemColor(id: Int): Int {
+                return ResourcesCompat.getColor(appCtx.resources, id, appCtx.theme)
+            }
         }
     }
 
