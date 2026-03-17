@@ -1,5 +1,6 @@
 package io.legado.app.ui.main.rss
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,6 +15,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowUp
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Stop
@@ -56,6 +59,7 @@ fun RssComposeScreen(
     rssSources: List<RssSource>
 ) {
     var searchQuery by remember { mutableStateOf("") }
+    var showSearch by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -63,11 +67,32 @@ fun RssComposeScreen(
                 title = "订阅",
                 subtitle = "订阅源、收藏和最新内容入口",
                 actions = {
+                    IconButton(onClick = { showSearch = !showSearch }) {
+                        Icon(
+                            imageVector = if (showSearch) Icons.Default.SearchOff else Icons.Default.Search,
+                            contentDescription = "搜索"
+                        )
+                    }
                     IconButton(onClick = { onTopAction(RssTopAction.Star) }) {
                         Icon(Icons.Default.Star, contentDescription = "收藏")
                     }
                     IconButton(onClick = { onTopAction(RssTopAction.Config) }) {
                         Icon(Icons.Default.Settings, contentDescription = "设置")
+                    }
+                },
+                belowTitle = {
+                    AnimatedVisibility(visible = showSearch || searchQuery.isNotBlank()) {
+                        LegadoSearchField(
+                            query = searchQuery,
+                            placeholder = "搜索订阅源",
+                            onQueryChange = {
+                                searchQuery = it
+                                onSearchQueryChange(it)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp)
+                        )
                     }
                 }
             )
@@ -85,19 +110,6 @@ fun RssComposeScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                LegadoSectionCard {
-                    LegadoSearchField(
-                        query = searchQuery,
-                        placeholder = "搜索订阅源",
-                        onQueryChange = {
-                            searchQuery = it
-                            onSearchQueryChange(it)
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
 
             if (rssSources.isEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {

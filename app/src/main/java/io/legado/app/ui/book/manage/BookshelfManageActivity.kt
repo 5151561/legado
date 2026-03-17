@@ -36,12 +36,13 @@ import io.legado.app.lib.dialogs.alert
 import io.legado.app.ui.book.group.GroupManageDialog
 import io.legado.app.ui.book.group.GroupSelectDialog
 import io.legado.app.ui.book.info.BookInfoActivity
+import io.legado.app.ui.compose.theme.LegadoBottomBar
 import io.legado.app.ui.compose.theme.LegadoComposeTheme
 import io.legado.app.ui.compose.theme.LegadoMenuButton
 import io.legado.app.ui.compose.theme.LegadoSearchAppBar
 import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.theme.applyLegadoPageListStyle
-import io.legado.app.ui.widget.SelectActionBar
+
 import io.legado.app.ui.widget.dialog.WaitDialog
 import io.legado.app.ui.widget.recycler.DragSelectTouchHelper
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
@@ -110,12 +111,20 @@ class BookshelfManageActivity :
 
         binding.composeArrangeBook.setContent {
             LegadoComposeTheme {
+                var isOpenBookInfo by remember { mutableStateOf(AppConfig.openBookInfoByClickTitle) }
+
                 BookshelfManageScreen(
                     query = searchQuery,
                     groupName = viewModel.groupName ?: "",
                     selectCount = selectCount,
                     totalCount = adapter.itemCount,
                     groups = groupList,
+                    isOpenBookInfo = isOpenBookInfo,
+                    onOpenBookInfoChange = { 
+                        isOpenBookInfo = it 
+                        AppConfig.openBookInfoByClickTitle = it
+                        adapter.notifyItemRangeChanged(0, adapter.itemCount)
+                    },
                     onQueryChange = { 
                         searchQuery = it 
                         upBookData()
@@ -170,10 +179,6 @@ class BookshelfManageActivity :
     private fun handleMenuAction(action: String, group: BookGroup?) {
         when(action) {
             "group_manage" -> showDialogFragment<GroupManageDialog>()
-            "open_book_info" -> {
-                AppConfig.openBookInfoByClickTitle = !AppConfig.openBookInfoByClickTitle
-                adapter.notifyItemRangeChanged(0, adapter.itemCount)
-            }
             "export_all" -> viewModel.saveAllUseBookSourceToFile { file ->
                 exportDir.launch {
                     mode = HandleFileContract.EXPORT
@@ -385,6 +390,8 @@ private fun BookshelfManageScreen(
     selectCount: Int,
     totalCount: Int,
     groups: List<BookGroup>,
+    isOpenBookInfo: Boolean,
+    onOpenBookInfoChange: (Boolean) -> Unit,
     onQueryChange: (String) -> Unit,
     onBackClick: () -> Unit,
     onActionMenuClick: (String, BookGroup?) -> Unit,
@@ -411,7 +418,16 @@ private fun BookshelfManageScreen(
                         )
                         DropdownMenuItem(
                             text = { Text("单击打开书籍信息") },
-                            onClick = { onActionMenuClick("open_book_info", null); dismiss() }
+                            trailingIcon = { 
+                                Checkbox(
+                                    checked = isOpenBookInfo, 
+                                    onCheckedChange = null
+                                ) 
+                            },
+                            onClick = { 
+                                onOpenBookInfoChange(!isOpenBookInfo)
+                                dismiss() 
+                            }
                         )
                         DropdownMenuItem(
                             text = { Text("书源导出含书籍验证") },
@@ -429,67 +445,53 @@ private fun BookshelfManageScreen(
             )
         },
         bottomBar = {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding(),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 0.dp
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(onClick = onSelectAll) {
-                        Text("全选")
-                    }
-                    TextButton(onClick = onRevertSelection) {
-                        Text("反选")
-                    }
-                    TextButton(onClick = onMainAction) {
-                        Text("移至分组", color = MaterialTheme.colorScheme.primary)
-                    }
-                    Text(
-                        text = "$selectCount/$totalCount",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp)
+            LegadoBottomBar {
+                TextButton(onClick = onSelectAll) {
+                    Text("全选")
+                }
+                TextButton(onClick = onRevertSelection) {
+                    Text("反选")
+                }
+                TextButton(onClick = onMainAction) {
+                    Text("移至分组", color = MaterialTheme.colorScheme.primary)
+                }
+                Text(
+                    text = "$selectCount/$totalCount",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+                LegadoMenuButton(
+                    icon = { Icon(Icons.Default.MoreVert, contentDescription = "更多") }
+                ) { dismiss ->
+                    DropdownMenuItem(
+                        text = { Text("删除选中内容") },
+                        onClick = { onBottomMenuClick("del_selection"); dismiss() }
                     )
-                    LegadoMenuButton(
-                        icon = { Icon(Icons.Default.MoreVert, contentDescription = "更 多") }
-                    ) { dismiss ->
-                        DropdownMenuItem(
-                            text = { Text("删除选中内容") },
-                            onClick = { onBottomMenuClick("del_selection"); dismiss() }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("允许选中书籍更新") },
-                            onClick = { onBottomMenuClick("update_enable"); dismiss() }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("禁止选中书籍更新") },
-                            onClick = { onBottomMenuClick("update_disable"); dismiss() }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("将选中书籍加到分组") },
-                            onClick = { onBottomMenuClick("add_to_group"); dismiss() }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("批量换源") },
-                            onClick = { onBottomMenuClick("change_source"); dismiss() }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("清理选中书籍缓存") },
-                            onClick = { onBottomMenuClick("clear_cache"); dismiss() }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("间隔选中状态") },
-                            onClick = { onBottomMenuClick("check_selected_interval"); dismiss() }
-                        )
-                    }
+                    DropdownMenuItem(
+                        text = { Text("允许选中书籍更新") },
+                        onClick = { onBottomMenuClick("update_enable"); dismiss() }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("禁止选中书籍更新") },
+                        onClick = { onBottomMenuClick("update_disable"); dismiss() }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("将选中书籍加到分组") },
+                        onClick = { onBottomMenuClick("add_to_group"); dismiss() }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("批量换源") },
+                        onClick = { onBottomMenuClick("change_source"); dismiss() }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("清理选中书籍缓存") },
+                        onClick = { onBottomMenuClick("clear_cache"); dismiss() }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("间隔选中状态") },
+                        onClick = { onBottomMenuClick("check_selected_interval"); dismiss() }
+                    )
                 }
             }
         }

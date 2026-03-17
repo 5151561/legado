@@ -1216,7 +1216,8 @@ class ReadBookActivity : BaseReadBookActivity(),
      * 显示阅读样式配置
      */
     override fun showReadStyle() {
-        showDialogFragment<ReadStyleDialog>()
+        // Now integrated into ReadMenuMaterialContent via Container Transform
+        // showDialogFragment<ReadInterfaceComposeDialog>()
     }
 
     /**
@@ -1661,6 +1662,7 @@ class ReadBookActivity : BaseReadBookActivity(),
                     9 -> readView.invalidateTextPage()
                     10 -> ChapterProvider.upLayout()
                     11 -> readView.submitRenderTask()
+                    12 -> readView.upPageAnim()
                 }
             }
         }

@@ -183,6 +183,26 @@ private fun RssFavoritesScreen(
     val pagerState = rememberPagerState(pageCount = { groups.size })
     val currentGroup = groups.getOrNull(pagerState.currentPage)
 
+    var lastGroup by remember { mutableStateOf("") }
+
+    LaunchedEffect(pagerState.currentPage) {
+        if (groups.isNotEmpty()) {
+            val group = groups.getOrNull(pagerState.currentPage)
+            if (group != null) {
+                lastGroup = group
+            }
+        }
+    }
+
+    LaunchedEffect(groups) {
+        if (lastGroup.isNotEmpty() && groups.isNotEmpty()) {
+            val idx = groups.indexOf(lastGroup)
+            if (idx != -1 && idx != pagerState.currentPage) {
+                pagerState.scrollToPage(idx)
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             LegadoSmallAppBar(
@@ -216,29 +236,31 @@ private fun RssFavoritesScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            ScrollableTabRow(
-                selectedTabIndex = pagerState.currentPage,
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.primary,
-                edgePadding = 0.dp
-            ) {
-                groups.forEachIndexed { index, group ->
-                    val coroutineScope = rememberCoroutineScope()
-                    Tab(
-                        selected = pagerState.currentPage == index,
-                        onClick = {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(index)
+            if (groups.size > 1) {
+                ScrollableTabRow(
+                    selectedTabIndex = pagerState.currentPage,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                    edgePadding = 0.dp
+                ) {
+                    groups.forEachIndexed { index, group ->
+                        val coroutineScope = rememberCoroutineScope()
+                        Tab(
+                            selected = pagerState.currentPage == index,
+                            onClick = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(index)
+                                }
+                            },
+                            text = {
+                                Text(
+                                    text = group,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = if (pagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal
+                                )
                             }
-                        },
-                        text = {
-                            Text(
-                                text = group,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = if (pagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
-                    )
+                        )
+                    }
                 }
             }
 

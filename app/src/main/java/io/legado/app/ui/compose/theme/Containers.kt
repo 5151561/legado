@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-internal object LegadoPageDefaults {
+object LegadoPageDefaults {
     val HorizontalPadding = 16.dp
     val SectionSpacing = 12.dp
     val SectionInnerPadding = 16.dp
@@ -21,7 +21,7 @@ internal object LegadoPageDefaults {
 }
 
 @Composable
-internal fun LegadoTopBarSurface(
+fun LegadoTopBarSurface(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -36,7 +36,7 @@ internal fun LegadoTopBarSurface(
 }
 
 @Composable
-internal fun LegadoSectionCard(
+fun LegadoSectionCard(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(LegadoPageDefaults.SectionInnerPadding),
     content: @Composable ColumnScope.() -> Unit
@@ -56,7 +56,7 @@ internal fun LegadoSectionCard(
 }
 
 @Composable
-internal fun LegadoSectionLabel(
+fun LegadoSectionLabel(
     text: String,
     modifier: Modifier = Modifier
 ) {

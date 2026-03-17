@@ -110,9 +110,9 @@ class BookSourceDebugActivity : VMBaseActivity<ActivitySourceDebugBinding, BookS
                     onFocusChange = { hasFocus -> 
                         isHelpExpanded = hasFocus
                     },
-                    onHelpItemClick = { prefix, fillOnly ->
-                        if (fillOnly) {
-                            setSearchQuery(prefix, false)
+                    onHelpItemClick = { prefix, submit ->
+                        if (submit) {
+                            setSearchQuery(prefix, true)
                         } else {
                             if (searchQuery.isBlank() || searchQuery.length <= 2) {
                                 setSearchQuery(prefix, false)

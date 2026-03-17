@@ -264,7 +264,7 @@ fun LegadoMenuButton(
 }
 
 @Composable
-internal fun LegadoBottomBar(
+fun LegadoBottomBar(
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit
 ) {

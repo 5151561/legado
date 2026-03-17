@@ -57,6 +57,10 @@ fun RuleManageMaterialScreen(
     topBarContent: @Composable () -> Unit,
     headerBottomContent: @Composable () -> Unit = {},
     useSmallAppBar: Boolean = false,
+    useSearchAppBar: Boolean = false,
+    searchQuery: String = "",
+    onSearchQueryChange: (String) -> Unit = {},
+    searchPlaceholder: String = "搜索",
     itemMenuContent: @Composable ((RuleManageItemUi, () -> Unit) -> Unit)
 ) {
     var showBatchSheet by remember { mutableStateOf(false) }
@@ -64,20 +68,32 @@ fun RuleManageMaterialScreen(
 
     Scaffold(
         topBar = {
-            if (useSmallAppBar) {
-                LegadoSmallAppBar(
-                    title = title,
-                    onBackClick = onBackClick,
-                    actions = { topBarContent() }
-                )
-            } else {
-                LegadoPageHeader(
-                    title = title,
-                    subtitle = subtitle,
-                    onBackClick = onBackClick,
-                    actions = { topBarContent() },
-                    belowTitle = { headerBottomContent() }
-                )
+            when {
+                useSearchAppBar -> {
+                    LegadoSearchAppBar(
+                        query = searchQuery,
+                        onQueryChange = onSearchQueryChange,
+                        placeholder = searchPlaceholder,
+                        onBackClick = onBackClick,
+                        actions = { topBarContent() }
+                    )
+                }
+                useSmallAppBar -> {
+                    LegadoSmallAppBar(
+                        title = title,
+                        onBackClick = onBackClick,
+                        actions = { topBarContent() }
+                    )
+                }
+                else -> {
+                    LegadoPageHeader(
+                        title = title,
+                        subtitle = subtitle,
+                        onBackClick = onBackClick,
+                        actions = { topBarContent() },
+                        belowTitle = { headerBottomContent() }
+                    )
+                }
             }
         },
         bottomBar = {

@@ -115,14 +115,15 @@ class ReadMenu @JvmOverloads constructor(
                         }
                     },
                     onLayoutClick = {
-                        runMenuOut {
-                            callBack.showReadStyle()
-                        }
+                        uiState = uiState.copy(subMenu = "interface")
                     },
                     onSettingClick = {
                         runMenuOut {
                             callBack.showMoreSetting()
                         }
+                    },
+                    onSubMenuBack = {
+                        uiState = uiState.copy(subMenu = null)
                     }
                 )
             }
@@ -269,7 +270,8 @@ class ReadMenu @JvmOverloads constructor(
             seekMax = currentSeekMax(),
             preEnabled = ReadBook.durChapterIndex != 0,
             nextEnabled = ReadBook.durChapterIndex != ReadBook.simulatedChapterSize - 1,
-            autoPageEnabled = autoPageEnabled
+            autoPageEnabled = autoPageEnabled,
+            subMenu = if (visible) uiState.subMenu else null
         )
     }
 

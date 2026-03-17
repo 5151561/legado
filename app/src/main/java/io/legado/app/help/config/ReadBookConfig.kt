@@ -417,6 +417,12 @@ object ReadBookConfig {
             config.showFooterLine = value
         }
 
+    var tipSize: Int
+        get() = config.tipSize
+        set(value) {
+            config.tipSize = value
+        }
+
     fun getExportConfig(): Config {
         val exportConfig = durConfig.copy()
         if (shareLayout) {
@@ -552,7 +558,7 @@ object ReadBookConfig {
         var lineSpacingExtra: Int = 12,//行间距
         var paragraphSpacing: Int = 2,//段距
         var titleMode: Int = 0,//标题位置 0:居左 1:居中 2:隐藏
-        var titleSize: Int = 0,
+        var titleSize: Int = 24,
         var titleTopSpacing: Int = 0,
         var titleBottomSpacing: Int = 0,
         var paragraphIndent: String = "　　",//段落缩进
@@ -579,6 +585,7 @@ object ReadBookConfig {
         var tipFooterRight: Int = ReadTipConfig.pageAndTotal,
         var tipColor: Int = 0,
         var tipDividerColor: Int = -1,
+        var tipSize: Int = 12,
         var headerMode: Int = 0,
         var footerMode: Int = 0
     ) {

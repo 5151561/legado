@@ -2,21 +2,18 @@ package io.legado.app.ui.association
 
 import android.os.Bundle
 import androidx.activity.viewModels
+import androidx.compose.runtime.Composable
 import io.legado.app.R
-import io.legado.app.base.VMBaseActivity
-import io.legado.app.databinding.ActivityTranslucenceBinding
+import io.legado.app.base.VMBaseComposeActivity
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.utils.showDialogFragment
-import io.legado.app.utils.viewbindingdelegate.viewBinding
 
 /**
  * 网络一键导入
  * 格式: legado://import/{path}?src={url}
  */
-class OnLineImportActivity :
-    VMBaseActivity<ActivityTranslucenceBinding, OnLineImportViewModel>() {
+class OnLineImportActivity : VMBaseComposeActivity<OnLineImportViewModel>() {
 
-    override val binding by viewBinding(ActivityTranslucenceBinding::inflate)
     override val viewModel by viewModels<OnLineImportViewModel>()
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -101,6 +98,11 @@ class OnLineImportActivity :
                 else -> viewModel.determineType(url, this::finallyDialog)
             }
         }
+    }
+
+    @Composable
+    override fun Content() {
+        // 弹窗分发容器
     }
 
     private fun finallyDialog(title: String, msg: String) {

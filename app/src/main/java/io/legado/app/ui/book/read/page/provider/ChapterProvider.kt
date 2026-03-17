@@ -915,21 +915,16 @@ object ChapterProvider {
         val bold = Typeface.create(typeface, Typeface.BOLD)
         val normal = Typeface.create(typeface, Typeface.NORMAL)
         val (titleFont, textFont) = when (ReadBookConfig.textBold) {
-            1 -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-                    Pair(Typeface.create(typeface, 900, false), bold)
-                else
-                    Pair(bold, bold)
-            }
-
+            1 -> Pair(bold, bold)
             2 -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-                    Pair(normal, Typeface.create(typeface, 300, false))
-                else
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    val thin = Typeface.create(typeface, 300, false)
+                    Pair(thin, thin)
+                } else {
                     Pair(normal, normal)
+                }
             }
-
-            else -> Pair(bold, normal)
+            else -> Pair(normal, normal)
         }
 
         //标题
@@ -937,7 +932,7 @@ object ChapterProvider {
         tPaint.color = ReadBookConfig.textColor
         tPaint.letterSpacing = ReadBookConfig.letterSpacing
         tPaint.typeface = titleFont
-        tPaint.textSize = with(ReadBookConfig) { textSize + titleSize }.toFloat().spToPx()
+        tPaint.textSize = ReadBookConfig.titleSize.toFloat().spToPx()
         tPaint.isAntiAlias = true
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q && AppConfig.optimizeRender) {
             tPaint.isLinearText = true

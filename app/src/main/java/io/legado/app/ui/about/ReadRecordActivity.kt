@@ -1,6 +1,7 @@
 package io.legado.app.ui.about
 
 import android.os.Bundle
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.DropdownMenuItem
@@ -54,6 +57,7 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
     private var records by mutableStateOf<List<ReadRecordShow>>(emptyList())
     private var allTime by mutableLongStateOf(0L)
     private var searchQuery by mutableStateOf("")
+    private var showSearch by mutableStateOf(false)
     private var sortMode
         get() = LocalConfig.getInt("readRecordSort", 0)
         set(value) {
@@ -78,6 +82,12 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
                             subtitle = "阅读历史与累计时长",
                             onBackClick = ::finish,
                             actions = {
+                                IconButton(onClick = { showSearch = !showSearch }) {
+                                    Icon(
+                                        imageVector = if (showSearch) Icons.Filled.SearchOff else Icons.Filled.Search,
+                                        contentDescription = "搜索"
+                                    )
+                                }
                                 LegadoMenuButton(
                                     icon = { Icon(Icons.Rounded.MoreVert, contentDescription = null) }
                                 ) { dismiss ->
@@ -120,17 +130,19 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
                                 }
                             },
                             belowTitle = {
-                                LegadoSearchField(
-                                    query = searchQuery,
-                                    placeholder = getString(R.string.search),
-                                    onQueryChange = {
-                                        searchQuery = it
-                                        refreshData(it)
-                                    },
-                                    modifier = androidx.compose.ui.Modifier
-                                        .fillMaxWidth()
-                                        .padding(bottom = 12.dp)
-                                )
+                                AnimatedVisibility(visible = showSearch || searchQuery.isNotBlank()) {
+                                    LegadoSearchField(
+                                        query = searchQuery,
+                                        placeholder = getString(R.string.search),
+                                        onQueryChange = {
+                                            searchQuery = it
+                                            refreshData(it)
+                                        },
+                                        modifier = androidx.compose.ui.Modifier
+                                            .fillMaxWidth()
+                                            .padding(bottom = 12.dp)
+                                    )
+                                }
                             }
                         )
                     }

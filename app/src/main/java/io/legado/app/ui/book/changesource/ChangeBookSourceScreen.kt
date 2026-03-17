@@ -1,5 +1,6 @@
 package io.legado.app.ui.book.changesource
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,6 +23,8 @@ import androidx.compose.material.icons.filled.KeyboardDoubleArrowDown
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowUp
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.ThumbDown
@@ -68,6 +71,7 @@ fun ChangeBookSourceScreen(
     val isLoading by viewModel.searchStateData.observeAsState(false)
     val progress by viewModel.changeSourceProgress.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
+    var showSearch by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -77,6 +81,12 @@ fun ChangeBookSourceScreen(
                     subtitle = viewModel.author,
                     onBackClick = onBackClick,
                     actions = {
+                        IconButton(onClick = { showSearch = !showSearch }) {
+                            Icon(
+                                imageVector = if (showSearch) Icons.Default.SearchOff else Icons.Default.Search,
+                                contentDescription = "搜索"
+                            )
+                        }
                         IconButton(onClick = { viewModel.startOrStopSearch() }) {
                             Icon(
                                 if (isLoading) Icons.Default.Stop else Icons.Default.Refresh,
@@ -86,17 +96,19 @@ fun ChangeBookSourceScreen(
                         TopMenuButton(onTopAction)
                     }
                 ) {
-                    LegadoSearchField(
-                        query = searchQuery,
-                        placeholder = "搜索源或书名",
-                        onQueryChange = {
-                            searchQuery = it
-                            viewModel.screen(it)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
+                    AnimatedVisibility(visible = showSearch || searchQuery.isNotBlank()) {
+                        LegadoSearchField(
+                            query = searchQuery,
+                            placeholder = "搜索源或书名",
+                            onQueryChange = {
+                                searchQuery = it
+                                viewModel.screen(it)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
                     if (isLoading) {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                     }

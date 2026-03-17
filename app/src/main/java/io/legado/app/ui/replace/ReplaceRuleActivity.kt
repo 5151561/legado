@@ -42,7 +42,6 @@ import io.legado.app.ui.association.ImportReplaceRuleDialog
 import io.legado.app.ui.compose.theme.LegadoComposeTheme
 import io.legado.app.ui.compose.theme.LegadoMenuButton
 import io.legado.app.ui.compose.theme.LegadoPageDefaults
-import io.legado.app.ui.compose.theme.LegadoSearchField
 import io.legado.app.ui.compose.theme.RuleManageItemUi
 import io.legado.app.ui.compose.theme.RuleManageMaterialScreen
 import io.legado.app.ui.compose.theme.RuleManageSheetAction
@@ -168,6 +167,13 @@ class ReplaceRuleActivity : VMBaseActivity<ActivityReplaceRuleBinding, ReplaceRu
                         RuleManageSheetAction("export", "导出选中", Icons.Rounded.Publish)
                     ),
                     onBatchAction = ::handleBatchAction,
+                    useSearchAppBar = true,
+                    searchQuery = searchQuery,
+                    onSearchQueryChange = {
+                        searchQuery = it
+                        observeReplaceRuleData(it)
+                    },
+                    searchPlaceholder = getString(R.string.replace_purify_search),
                     topBarContent = {
                         IconButton(onClick = {
                             editActivity.launch(ReplaceEditActivity.startIntent(this@ReplaceRuleActivity))
@@ -246,23 +252,6 @@ class ReplaceRuleActivity : VMBaseActivity<ActivityReplaceRuleBinding, ReplaceRu
                                 }
                             )
                         }
-                    },
-                    headerBottomContent = {
-                        LegadoSearchField(
-                            query = searchQuery,
-                            placeholder = getString(R.string.replace_purify_search),
-                                onQueryChange = {
-                                    searchQuery = it
-                                    observeReplaceRuleData(it)
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(
-                                        start = LegadoPageDefaults.HorizontalPadding,
-                                        end = LegadoPageDefaults.HorizontalPadding,
-                                        bottom = 12.dp
-                                    )
-                        )
                     },
                     itemMenuContent = { item, dismiss ->
                         DropdownMenuItem(

@@ -3,8 +3,11 @@ package io.legado.app.ui.dict.rule
 import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.HelpOutline
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.FileUpload
@@ -65,6 +68,7 @@ class DictRuleActivity : VMBaseActivity<ActivityDictRuleBinding, DictRuleViewMod
     private var dictRules by mutableStateOf<List<DictRule>>(emptyList())
     private var selectedNames by mutableStateOf<Set<String>>(emptySet())
     private var searchQuery by mutableStateOf("")
+    private var showSearch by mutableStateOf(false)
 
     private val qrCodeResult = registerForActivityResult(QrCodeResult()) {
         it ?: return@registerForActivityResult
@@ -136,6 +140,12 @@ class DictRuleActivity : VMBaseActivity<ActivityDictRuleBinding, DictRuleViewMod
                     ),
                     onBatchAction = ::handleBatchAction,
                     topBarContent = {
+                        IconButton(onClick = { showSearch = !showSearch }) {
+                            Icon(
+                                imageVector = if (showSearch) Icons.Default.SearchOff else Icons.Default.Search,
+                                contentDescription = "搜索"
+                            )
+                        }
                         IconButton(onClick = { showDialogFragment<DictRuleEditDialog>() }) {
                             Icon(Icons.Rounded.Add, contentDescription = null)
                         }
@@ -198,14 +208,16 @@ class DictRuleActivity : VMBaseActivity<ActivityDictRuleBinding, DictRuleViewMod
                         }
                     },
                     headerBottomContent = {
-                        io.legado.app.ui.compose.theme.LegadoSearchField(
-                            query = searchQuery,
-                            placeholder = "搜索字典规则",
-                            onQueryChange = { searchQuery = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
-                        )
+                        AnimatedVisibility(visible = showSearch || searchQuery.isNotBlank()) {
+                            io.legado.app.ui.compose.theme.LegadoSearchField(
+                                query = searchQuery,
+                                placeholder = "搜索字典规则",
+                                onQueryChange = { searchQuery = it },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+                            )
+                        }
                     },
                     itemMenuContent = { item, dismiss ->
                         DropdownMenuItem(

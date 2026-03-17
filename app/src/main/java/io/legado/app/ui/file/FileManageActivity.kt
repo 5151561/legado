@@ -3,6 +3,7 @@ package io.legado.app.ui.file
 import android.os.Bundle
 import androidx.activity.addCallback
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Folder
@@ -55,6 +58,7 @@ class FileManageActivity : VMBaseActivity<ActivityFileManageBinding, FileManageV
     private val dirParent = ".."
     private var currentFiles by mutableStateOf<List<File>>(emptyList())
     private var searchQuery by mutableStateOf("")
+    private var showSearch by mutableStateOf(false)
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         binding.composeFileManageContent.setContent {
@@ -80,15 +84,25 @@ class FileManageActivity : VMBaseActivity<ActivityFileManageBinding, FileManageV
                             title = getString(R.string.file_manage),
                             subtitle = "查看应用目录与导入导出文件",
                             onBackClick = ::finish,
+                            actions = {
+                                IconButton(onClick = { showSearch = !showSearch }) {
+                                    Icon(
+                                        imageVector = if (showSearch) Icons.Default.SearchOff else Icons.Default.Search,
+                                        contentDescription = "搜索"
+                                    )
+                                }
+                            },
                             belowTitle = {
-                                LegadoSearchField(
-                                    query = searchQuery,
-                                    placeholder = getString(R.string.screen) + " • " + getString(R.string.file_manage),
-                                    onQueryChange = { searchQuery = it },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(bottom = 12.dp)
-                                )
+                                AnimatedVisibility(visible = showSearch || searchQuery.isNotBlank()) {
+                                    LegadoSearchField(
+                                        query = searchQuery,
+                                        placeholder = getString(R.string.screen) + " • " + getString(R.string.file_manage),
+                                        onQueryChange = { searchQuery = it },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(bottom = 12.dp)
+                                    )
+                                }
                             }
                         )
                     }

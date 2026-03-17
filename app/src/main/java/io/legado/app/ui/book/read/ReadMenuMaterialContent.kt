@@ -5,6 +5,12 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
@@ -55,6 +61,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -78,7 +85,8 @@ internal data class ReadMenuUiState(
     val seekMax: Int = 0,
     val preEnabled: Boolean = false,
     val nextEnabled: Boolean = false,
-    val autoPageEnabled: Boolean = false
+    val autoPageEnabled: Boolean = false,
+    val subMenu: String? = null
 )
 
 internal data class ReadMenuSourceAction(
@@ -124,12 +132,18 @@ internal fun ReadMenuMaterialContent(
     onReadAloudClick: () -> Unit,
     onReadAloudLongClick: () -> Unit,
     onLayoutClick: () -> Unit,
-    onSettingClick: () -> Unit
+    onSettingClick: () -> Unit,
+    onSubMenuBack: () -> Unit
 ) {
     val textColor = state.contentColor
     val topColor = state.containerColor.copy(alpha = 0.94f)
     val bottomColor = state.containerColor.copy(alpha = 0.96f)
     val iconBackground = state.contentColor.copy(alpha = 0.12f)
+    val subMenuAlpha by animateFloatAsState(
+        targetValue = if (state.subMenu == null) 1f else 0f,
+        animationSpec = tween(300),
+        label = "SubMenuAlpha"
+    )
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (overflowVisible) {
@@ -203,7 +217,8 @@ internal fun ReadMenuMaterialContent(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 28.dp, start = 16.dp, end = 16.dp),
+                    .padding(top = 28.dp, start = 16.dp, end = 16.dp)
+                    .alpha(subMenuAlpha),
                 shape = RoundedCornerShape(28.dp),
                 color = topColor
             ) {
@@ -329,7 +344,9 @@ internal fun ReadMenuMaterialContent(
                 exit = fadeOut()
             ) {
                 Surface(
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .alpha(subMenuAlpha),
                     shape = RoundedCornerShape(32.dp),
                     color = topColor
                 ) {
@@ -387,42 +404,100 @@ internal fun ReadMenuMaterialContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-                    .navigationBarsPadding(),
+                    .navigationBarsPadding()
+                    .animateContentSize(
+                        animationSpec = tween(300)
+                    ),
                 shape = RoundedCornerShape(32.dp),
                 color = bottomColor,
                 shadowElevation = 16.dp
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceAround
-                    ) {
-                        MenuCircleAction(Icons.Rounded.Search, "搜索", textColor, iconBackground, onSearchClick)
-                        MenuCircleAction(Icons.Rounded.TouchApp, "翻页", textColor, iconBackground, onAutoPageClick)
-                        MenuCircleAction(Icons.Rounded.AutoAwesome, "净化", textColor, iconBackground, onReplaceClick)
-                        MenuCircleAction(Icons.Rounded.DarkMode, "夜间", textColor, iconBackground, onNightModeClick)
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    ChapterSeekBar(
-                        textColor = textColor,
-                        seekProgress = state.seekProgress,
-                        seekMax = state.seekMax,
-                        preEnabled = state.preEnabled,
-                        nextEnabled = state.nextEnabled,
-                        onSeekChange = onSeekChange,
-                        onSeekChangeFinished = onSeekChangeFinished,
-                        onPrevClick = onPrevClick,
-                        onNextClick = onNextClick
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceAround
-                    ) {
-                        MenuTabAction(Icons.AutoMirrored.Rounded.FormatListBulleted, "目录", textColor, onCatalogClick)
-                        MenuTabAction(Icons.Rounded.Headphones, "朗读", textColor, onReadAloudClick, onReadAloudLongClick)
-                        MenuTabAction(Icons.Rounded.FormatSize, "界面", textColor, onLayoutClick)
-                        MenuTabAction(Icons.Rounded.Settings, "设置", textColor, onSettingClick)
+                AnimatedContent(
+                    targetState = state.subMenu,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(220, delayMillis = 90)) +
+                                scaleIn(
+                                    initialScale = 0.92f,
+                                    animationSpec = tween(220, delayMillis = 90)
+                                ) togetherWith
+                                fadeOut(animationSpec = tween(90))
+                    },
+                    label = "MenuContainerTransform"
+                ) { subMenu ->
+                    if (subMenu == "interface") {
+                        ReadInterfaceSubMenu(
+                            textColor = textColor,
+                            onBack = onSubMenuBack
+                        )
+                    } else {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceAround
+                            ) {
+                                MenuCircleAction(
+                                    Icons.Rounded.Search,
+                                    "搜索",
+                                    textColor,
+                                    iconBackground,
+                                    onSearchClick
+                                )
+                                MenuCircleAction(
+                                    Icons.Rounded.TouchApp,
+                                    "翻页",
+                                    textColor,
+                                    iconBackground,
+                                    onAutoPageClick
+                                )
+                                MenuCircleAction(
+                                    Icons.Rounded.AutoAwesome,
+                                    "净化",
+                                    textColor,
+                                    iconBackground,
+                                    onReplaceClick
+                                )
+                                MenuCircleAction(
+                                    Icons.Rounded.DarkMode,
+                                    "夜间",
+                                    textColor,
+                                    iconBackground,
+                                    onNightModeClick
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            ChapterSeekBar(
+                                textColor = textColor,
+                                seekProgress = state.seekProgress,
+                                seekMax = state.seekMax,
+                                preEnabled = state.preEnabled,
+                                nextEnabled = state.nextEnabled,
+                                onSeekChange = onSeekChange,
+                                onSeekChangeFinished = onSeekChangeFinished,
+                                onPrevClick = onPrevClick,
+                                onNextClick = onNextClick
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceAround
+                            ) {
+                                MenuTabAction(
+                                    Icons.AutoMirrored.Rounded.FormatListBulleted,
+                                    "目录",
+                                    textColor,
+                                    onCatalogClick
+                                )
+                                MenuTabAction(
+                                    Icons.Rounded.Headphones,
+                                    "朗读",
+                                    textColor,
+                                    onReadAloudClick,
+                                    onReadAloudLongClick
+                                )
+                                MenuTabAction(Icons.Rounded.FormatSize, "界面", textColor, onLayoutClick)
+                                MenuTabAction(Icons.Rounded.Settings, "设置", textColor, onSettingClick)
+                            }
+                        }
                     }
                 }
             }

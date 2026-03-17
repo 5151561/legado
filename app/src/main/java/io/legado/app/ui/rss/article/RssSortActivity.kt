@@ -3,36 +3,44 @@
 package io.legado.app.ui.rss.article
 
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
-import android.view.ViewGroup
 import androidx.activity.viewModels
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentStatePagerAdapter
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import io.legado.app.R
-import io.legado.app.base.VMBaseActivity
-import io.legado.app.databinding.ActivityRssArtivlesBinding
+import io.legado.app.base.VMBaseComposeActivity
+import io.legado.app.data.appDb
 import io.legado.app.help.source.sortUrls
+import io.legado.app.lib.dialogs.alert
+import io.legado.app.ui.compose.theme.*
 import io.legado.app.ui.login.SourceLoginActivity
+import io.legado.app.ui.rss.read.ReadRssActivity
 import io.legado.app.ui.rss.source.edit.RssSourceEditActivity
-import io.legado.app.ui.theme.applyLegadoTabsStyle
-import io.legado.app.ui.theme.applyLegadoPageSurfaceStyle
 import io.legado.app.ui.widget.dialog.VariableDialog
 import io.legado.app.utils.*
-import io.legado.app.utils.viewbindingdelegate.viewBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class RssSortActivity : VMBaseActivity<ActivityRssArtivlesBinding, RssSortViewModel>(),
+class RssSortActivity : VMBaseComposeActivity<RssSortViewModel>(),
     VariableDialog.Callback {
 
-    override val binding by viewBinding(ActivityRssArtivlesBinding::inflate)
     override val viewModel by viewModels<RssSortViewModel>()
-    private val adapter by lazy { TabFragmentPageAdapter() }
-    private val sortList = mutableListOf<Pair<String, String>>()
-    private val fragmentMap = hashMapOf<String, Fragment>()
+    private val sortList = mutableStateListOf<Pair<String, String>>()
+    
     private val editSourceResult = registerForActivityResult(
         StartActivityContract(RssSourceEditActivity::class.java)
     ) {
@@ -44,60 +52,9 @@ class RssSortActivity : VMBaseActivity<ActivityRssArtivlesBinding, RssSortViewMo
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
-        binding.root.applyLegadoPageSurfaceStyle()
-        binding.viewPager.adapter = adapter
-        binding.tabLayout.setupWithViewPager(binding.viewPager)
-        binding.tabLayout.applyLegadoTabsStyle()
-        viewModel.titleLiveData.observe(this) {
-            binding.titleBar.title = it
-        }
         viewModel.initData(intent) {
             upFragments()
         }
-    }
-
-    override fun onCompatCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.rss_articles, menu)
-        return super.onCompatCreateOptionsMenu(menu)
-    }
-
-    override fun onMenuOpened(featureId: Int, menu: Menu): Boolean {
-        menu.findItem(R.id.menu_login)?.isVisible =
-            !viewModel.rssSource?.loginUrl.isNullOrBlank()
-        return super.onMenuOpened(featureId, menu)
-    }
-
-    override fun onCompatOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.menu_login -> startActivity<SourceLoginActivity> {
-                putExtra("type", "rssSource")
-                putExtra("key", viewModel.rssSource?.sourceUrl)
-            }
-
-            R.id.menu_refresh_sort -> viewModel.clearSortCache { upFragments() }
-            R.id.menu_set_source_variable -> setSourceVariable()
-            R.id.menu_edit_source -> viewModel.rssSource?.sourceUrl?.let {
-                editSourceResult.launch {
-                    putExtra("sourceUrl", it)
-                }
-            }
-
-            R.id.menu_clear -> {
-                viewModel.url?.let {
-                    viewModel.clearArticles()
-                }
-            }
-
-            R.id.menu_switch_layout -> {
-                viewModel.switchLayout()
-                upFragments()
-            }
-
-            R.id.menu_read_record -> {
-                showDialogFragment<ReadRecordDialog>()
-            }
-        }
-        return super.onCompatOptionsItemSelected(item)
     }
 
     private fun upFragments() {
@@ -106,25 +63,152 @@ class RssSortActivity : VMBaseActivity<ActivityRssArtivlesBinding, RssSortViewMo
                 sortList.clear()
                 sortList.addAll(it)
             }
-            binding.viewPager.applyLegadoPageSurfaceStyle(transparent = true)
-            if (sortList.size == 1) {
-                binding.tabLayout.gone()
-            } else {
-                binding.tabLayout.visible()
+        }
+    }
+
+    @Composable
+    override fun Content() {
+        val title by viewModel.titleLiveData.observeAsState(stringResource(R.string.rss))
+        
+        Scaffold(
+            topBar = {
+                LegadoSmallAppBar(
+                    title = title,
+                    onBackClick = { finish() },
+                    actions = {
+                        LegadoMenuButton(
+                            icon = { Icon(Icons.Default.MoreVert, contentDescription = "更多") }
+                        ) { dismiss ->
+                            if (!viewModel.rssSource?.loginUrl.isNullOrBlank()) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.login)) },
+                                    onClick = {
+                                        startActivity<SourceLoginActivity> {
+                                            putExtra("type", "rssSource")
+                                            putExtra("key", viewModel.rssSource?.sourceUrl)
+                                        }
+                                        dismiss()
+                                    }
+                                )
+                            }
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.refresh_sort)) },
+                                onClick = { viewModel.clearSortCache { upFragments() }; dismiss() }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.set_source_variable)) },
+                                onClick = { setSourceVariable(); dismiss() }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.edit_source)) },
+                                onClick = {
+                                    viewModel.rssSource?.sourceUrl?.let {
+                                        editSourceResult.launch { putExtra("sourceUrl", it) }
+                                    }
+                                    dismiss()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.clear)) },
+                                onClick = { viewModel.clearArticles(); dismiss() }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.read_record)) },
+                                onClick = { showDialogFragment<ReadRecordDialog>(); dismiss() }
+                            )
+                        }
+                    }
+                )
             }
-            adapter.notifyDataSetChanged()
+        ) { padding ->
+            if (sortList.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                    val pagerState = rememberPagerState { sortList.size }
+                    
+                    if (sortList.size > 1) {
+                        ScrollableTabRow(
+                            selectedTabIndex = pagerState.currentPage,
+                            edgePadding = 0.dp,
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            divider = {}
+                        ) {
+                            sortList.forEachIndexed { index, pair ->
+                                val coroutineScope = rememberCoroutineScope()
+                                Tab(
+                                    selected = pagerState.currentPage == index,
+                                    onClick = { coroutineScope.launch { pagerState.animateScrollToPage(index) } },
+                                    text = { Text(pair.first) }
+                                )
+                            }
+                        }
+                    }
+                    
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.weight(1f)
+                    ) { pageIdx ->
+                        val sort = sortList[pageIdx]
+                        RssArticlesPage(sort.first, sort.second)
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun RssArticlesPage(sortName: String, sortUrl: String) {
+        val pageViewModel = viewModel<RssArticlesViewModel>(key = sortUrl)
+        val articles by appDb.rssArticleDao.flowByOriginSort(viewModel.url ?: "", sortName).collectAsState(emptyList())
+        val hasMore by pageViewModel.loadFinallyLiveData.observeAsState(true)
+        val error by pageViewModel.loadErrorLiveData.observeAsState()
+        
+        LaunchedEffect(sortUrl) {
+            pageViewModel.sortName = sortName
+            pageViewModel.sortUrl = sortUrl
+            viewModel.rssSource?.let { pageViewModel.loadArticles(it) }
+        }
+        
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(articles) { article ->
+                RssArticleItem(
+                    article = article,
+                    onClick = {
+                        viewModel.read(article)
+                        startActivity<ReadRssActivity> {
+                            putExtra("title", article.title)
+                            putExtra("origin", article.origin)
+                            putExtra("link", article.link)
+                        }
+                    }
+                )
+                LegadoItemDivider()
+            }
+            
+            item {
+                if (hasMore) {
+                    LaunchedEffect(articles.size) {
+                        viewModel.rssSource?.let { pageViewModel.loadMore(it) }
+                    }
+                    Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    }
+                } else if (articles.isNotEmpty()) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                        Text(stringResource(R.string.no_find), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
         }
     }
 
     private fun setSourceVariable() {
         lifecycleScope.launch {
-            val source = viewModel.rssSource
-            if (source == null) {
-                toastOnUi("源不存在")
-                return@launch
-            }
-            val comment =
-                source.getDisplayVariableComment("源变量可在js中通过source.getVariable()获取")
+            val source = viewModel.rssSource ?: return@launch
+            val comment = source.getDisplayVariableComment("源变量可在js中通过source.getVariable()获取")
             val variable = withContext(Dispatchers.IO) { source.getVariable() }
             showDialogFragment(
                 VariableDialog(
@@ -139,33 +223,6 @@ class RssSortActivity : VMBaseActivity<ActivityRssArtivlesBinding, RssSortViewMo
 
     override fun setVariable(key: String, variable: String?) {
         viewModel.rssSource?.setVariable(variable)
-    }
-
-    private inner class TabFragmentPageAdapter :
-        FragmentStatePagerAdapter(supportFragmentManager, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT) {
-
-        override fun getItemPosition(`object`: Any): Int {
-            return POSITION_NONE
-        }
-
-        override fun getPageTitle(position: Int): CharSequence {
-            return sortList[position].first
-        }
-
-        override fun getItem(position: Int): Fragment {
-            val sort = sortList[position]
-            return RssArticlesFragment(sort.first, sort.second)
-        }
-
-        override fun getCount(): Int {
-            return sortList.size
-        }
-
-        override fun instantiateItem(container: ViewGroup, position: Int): Any {
-            val fragment = super.instantiateItem(container, position) as Fragment
-            fragmentMap[sortList[position].first] = fragment
-            return fragment
-        }
     }
 
 }

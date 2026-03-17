@@ -182,66 +182,66 @@ class PageView(context: Context) : FrameLayout(context) {
             tag = ReadTipConfig.chapterTitle
             isBattery = false
             typeface = ChapterProvider.typeface
-            textSize = 12f
+            textSize = ReadBookConfig.tipSize.toFloat()
         }
         tvTime = getTipView(ReadTipConfig.time)?.apply {
             tag = ReadTipConfig.time
             isBattery = false
             typeface = ChapterProvider.typeface
-            textSize = 12f
+            textSize = ReadBookConfig.tipSize.toFloat()
         }
         tvBattery = getTipView(ReadTipConfig.battery)?.apply {
             tag = ReadTipConfig.battery
             isBattery = true
-            textSize = 11f
+            textSize = (ReadBookConfig.tipSize - 1).toFloat()
         }
         tvPage = getTipView(ReadTipConfig.page)?.apply {
             tag = ReadTipConfig.page
             isBattery = false
             typeface = ChapterProvider.typeface
-            textSize = 12f
+            textSize = ReadBookConfig.tipSize.toFloat()
         }
         tvTotalProgress = getTipView(ReadTipConfig.totalProgress)?.apply {
             tag = ReadTipConfig.totalProgress
             isBattery = false
             typeface = ChapterProvider.typeface
-            textSize = 12f
+            textSize = ReadBookConfig.tipSize.toFloat()
         }
         tvTotalProgress1 = getTipView(ReadTipConfig.totalProgress1)?.apply {
             tag = ReadTipConfig.totalProgress1
             isBattery = false
             typeface = ChapterProvider.typeface
-            textSize = 12f
+            textSize = ReadBookConfig.tipSize.toFloat()
         }
         tvPageAndTotal = getTipView(ReadTipConfig.pageAndTotal)?.apply {
             tag = ReadTipConfig.pageAndTotal
             isBattery = false
             typeface = ChapterProvider.typeface
-            textSize = 12f
+            textSize = ReadBookConfig.tipSize.toFloat()
         }
         tvBookName = getTipView(ReadTipConfig.bookName)?.apply {
             tag = ReadTipConfig.bookName
             isBattery = false
             typeface = ChapterProvider.typeface
-            textSize = 12f
+            textSize = ReadBookConfig.tipSize.toFloat()
         }
         tvTimeBattery = getTipView(ReadTipConfig.timeBattery)?.apply {
             tag = ReadTipConfig.timeBattery
             isBattery = true
             typeface = ChapterProvider.typeface
-            textSize = 11f
+            textSize = (ReadBookConfig.tipSize - 1).toFloat()
         }
         tvBatteryP = getTipView(ReadTipConfig.batteryPercentage)?.apply {
             tag = ReadTipConfig.batteryPercentage
             isBattery = false
             typeface = ChapterProvider.typeface
-            textSize = 12f
+            textSize = ReadBookConfig.tipSize.toFloat()
         }
         tvTimeBatteryP = getTipView(ReadTipConfig.timeBatteryPercentage)?.apply {
             tag = ReadTipConfig.timeBatteryPercentage
             isBattery = false
             typeface = ChapterProvider.typeface
-            textSize = 12f
+            textSize = ReadBookConfig.tipSize.toFloat()
         }
     }
 

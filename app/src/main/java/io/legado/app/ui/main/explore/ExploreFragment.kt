@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -68,7 +67,7 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookSourcePart
 import io.legado.app.data.entities.rule.ExploreKind
 import io.legado.app.databinding.FragmentExploreBinding
-import io.legado.app.help.config.AppConfig
+
 import io.legado.app.help.source.clearExploreKindsCache
 import io.legado.app.help.source.exploreKinds
 import io.legado.app.lib.dialogs.alert
@@ -76,6 +75,7 @@ import io.legado.app.ui.book.explore.ExploreShowActivity
 import io.legado.app.ui.book.search.SearchActivity
 import io.legado.app.ui.book.search.SearchScope
 import io.legado.app.ui.book.source.edit.BookSourceEditActivity
+import io.legado.app.ui.compose.theme.LegadoBottomBar
 import io.legado.app.ui.compose.theme.LegadoComposeTheme
 import io.legado.app.ui.compose.theme.LegadoEmptyState
 import io.legado.app.ui.compose.theme.LegadoMenuButton
@@ -375,35 +375,24 @@ private fun ExploreScreen(
             )
         },
         bottomBar = {
-            Surface(color = MaterialTheme.colorScheme.surface) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+            LegadoBottomBar {
+                Text(
+                    text = if (isGroupFilter) {
+                        "分组筛选中，共 ${sources.size} 个发现源"
+                    } else {
+                        "共 ${sources.size} 个发现源"
+                    },
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                androidx.compose.material3.IconButton(
+                    onClick = { onBackToTop() }
                 ) {
-                    Text(
-                        text = if (isGroupFilter) {
-                            "分组筛选中，共 ${sources.size} 个发现源"
-                        } else {
-                            "共 ${sources.size} 个发现源"
-                        },
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Icon(
+                        imageVector = Icons.Default.KeyboardDoubleArrowUp,
+                        contentDescription = "收起并回到顶部"
                     )
-                    androidx.compose.material3.IconButton(
-                        onClick = {
-                            onBackToTop()
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.KeyboardDoubleArrowUp,
-                            contentDescription = "收起并回到顶部"
-                        )
-                    }
                 }
             }
         }

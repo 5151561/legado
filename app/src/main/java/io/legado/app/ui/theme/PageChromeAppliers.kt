@@ -1,13 +1,10 @@
 package io.legado.app.ui.theme
 
 import android.view.View
-import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import io.legado.app.help.config.AppConfig
 import io.legado.app.utils.applyBackgroundTint
 import io.legado.app.utils.applyTint
 import io.legado.app.utils.setEdgeEffectColor
@@ -50,30 +47,4 @@ fun SwipeRefreshLayout.applyLegadoRefreshStyle() {
     setBackgroundColor(android.graphics.Color.TRANSPARENT)
     setColorSchemeColors(tokens.shared.accent)
     setProgressBackgroundColorSchemeColor(tokens.tabs.container)
-}
-
-fun TextView.applyLegadoPageEmptyStateStyle() {
-    val tokens = context.legadoComponentTokens()
-    setTextColor(tokens.dialog.supportingText)
-    if (!AppConfig.isEInkMode) {
-        alpha = 0.92f
-    }
-}
-
-fun LinearLayout.applyLegadoBottomBarStyle() {
-    setBackgroundColor(context.legadoComponentTokens().tabs.container)
-}
-
-fun TextView.applyLegadoBottomBarTextStyle() {
-    setTextColor(context.legadoComponentTokens().preference.supporting)
-}
-
-fun ImageView.applyLegadoBottomBarIconStyle() {
-    setColorFilter(context.legadoComponentTokens().preference.trailing)
-}
-
-fun TextView.applyLegadoAssistChipStyle() {
-    val tokens = context.legadoComponentTokens()
-    setBackgroundColor(tokens.tabs.container)
-    setTextColor(tokens.topAppBar.title)
 }

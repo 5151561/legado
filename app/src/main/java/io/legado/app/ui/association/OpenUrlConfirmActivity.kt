@@ -1,16 +1,12 @@
 package io.legado.app.ui.association
 
 import android.os.Bundle
-import io.legado.app.base.BaseActivity
+import androidx.compose.runtime.Composable
+import io.legado.app.base.BaseComposeActivity
 import io.legado.app.constant.SourceType
-import io.legado.app.databinding.ActivityTranslucenceBinding
 import io.legado.app.utils.showDialogFragment
-import io.legado.app.utils.viewbindingdelegate.viewBinding
 
-class OpenUrlConfirmActivity :
-    BaseActivity<ActivityTranslucenceBinding>() {
-
-    override val binding by viewBinding(ActivityTranslucenceBinding::inflate)
+class OpenUrlConfirmActivity : BaseComposeActivity() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         intent.getStringExtra("uri")?.let {
@@ -20,6 +16,11 @@ class OpenUrlConfirmActivity :
             val sourceType = intent.getIntExtra("sourceType", SourceType.book)
             showDialogFragment(OpenUrlConfirmDialog(it, mimeType, sourceOrigin, sourceName, sourceType))
         } ?: finish()
+    }
+
+    @Composable
+    override fun Content() {
+        // 纯弹窗容器
     }
 
 }
