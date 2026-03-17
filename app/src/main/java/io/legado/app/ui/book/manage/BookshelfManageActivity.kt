@@ -2,13 +2,19 @@ package io.legado.app.ui.book.manage
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
+import android.view.LayoutInflater
 import android.widget.CheckBox
 import android.widget.LinearLayout
 import androidx.activity.viewModels
-import androidx.appcompat.widget.PopupMenu
-import androidx.appcompat.widget.SearchView
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -30,22 +36,21 @@ import io.legado.app.lib.dialogs.alert
 import io.legado.app.ui.book.group.GroupManageDialog
 import io.legado.app.ui.book.group.GroupSelectDialog
 import io.legado.app.ui.book.info.BookInfoActivity
+import io.legado.app.ui.compose.theme.LegadoComposeTheme
+import io.legado.app.ui.compose.theme.LegadoMenuButton
+import io.legado.app.ui.compose.theme.LegadoSearchAppBar
 import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.theme.applyLegadoPageListStyle
-import io.legado.app.ui.theme.applyLegadoPageSearchStyle
-import io.legado.app.ui.theme.applyLegadoPageSurfaceStyle
-import io.legado.app.ui.theme.applyLegadoTopAppBarStyle
 import io.legado.app.ui.widget.SelectActionBar
 import io.legado.app.ui.widget.dialog.WaitDialog
 import io.legado.app.ui.widget.recycler.DragSelectTouchHelper
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.ui.widget.recycler.VerticalDivider
-import io.legado.app.utils.applyTint
+import io.legado.app.ui.widget.recycler.scroller.FastScrollRecyclerView
 import io.legado.app.utils.cnCompare
 import io.legado.app.utils.dpToPx
 import io.legado.app.utils.isAbsUrl
 import io.legado.app.utils.sendToClip
-import io.legado.app.utils.setEdgeEffectColor
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.startActivity
 import io.legado.app.utils.viewbindingdelegate.viewBinding
@@ -64,8 +69,6 @@ import kotlin.math.max
  */
 class BookshelfManageActivity :
     VMBaseActivity<ActivityArrangeBookBinding, BookshelfManageViewModel>(),
-    PopupMenu.OnMenuItemClickListener,
-    SelectActionBar.CallBack,
     BookAdapter.CallBack,
     SourcePickerDialog.Callback,
     GroupSelectDialog.CallBack {
@@ -78,12 +81,12 @@ class BookshelfManageActivity :
     private val adapter by lazy { BookAdapter(this, this) }
     private val itemTouchCallback by lazy { ItemTouchCallback(adapter) }
     private var booksFlowJob: Job? = null
-    private var menu: Menu? = null
-    private val searchView: SearchView by lazy {
-        binding.titleBar.findViewById(R.id.search_view)
-    }
+
+    private var searchQuery by mutableStateOf("")
     private var books: List<Book>? = null
     private val waitDialog by lazy { WaitDialog(this) }
+    private var selectCount by mutableIntStateOf(0)
+    
     private val exportDir = registerForActivityResult(HandleFileContract()) {
         it.uri?.let { uri ->
             alert(R.string.export_success) {
@@ -104,17 +107,47 @@ class BookshelfManageActivity :
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         viewModel.groupId = intent.getLongExtra("groupId", -1)
-        binding.root.applyLegadoPageSurfaceStyle()
-        binding.titleBar.applyLegadoTopAppBarStyle()
+
+        binding.composeArrangeBook.setContent {
+            LegadoComposeTheme {
+                BookshelfManageScreen(
+                    query = searchQuery,
+                    groupName = viewModel.groupName ?: "",
+                    selectCount = selectCount,
+                    totalCount = adapter.itemCount,
+                    groups = groupList,
+                    onQueryChange = { 
+                        searchQuery = it 
+                        upBookData()
+                    },
+                    onBackClick = { finish() },
+                    onActionMenuClick = ::handleMenuAction,
+                    onSelectAll = { selectAll(!adapter.selection.containsAll(adapter.getItems())) },
+                    onRevertSelection = ::revertSelection,
+                    onMainAction = ::onClickSelectBarMainAction,
+                    onBottomMenuClick = ::handleBottomMenuAction,
+                    recyclerContent = { modifier ->
+                        AndroidView(
+                            modifier = modifier,
+                            factory = { context ->
+                                val inflater = LayoutInflater.from(context)
+                                val recyclerView = inflater.inflate(R.layout.view_fast_scroll_recycler, null, false) as FastScrollRecyclerView
+                                initRecyclerView(recyclerView)
+                                recyclerView
+                            }
+                        )
+                    }
+                )
+            }
+        }
+
         lifecycleScope.launch {
             viewModel.groupName = withContext(IO) {
                 appDb.bookGroupDao.getByID(viewModel.groupId)?.groupName
                     ?: getString(R.string.no_group)
             }
-            upTitle()
         }
-        initSearchView()
-        initRecyclerView()
+        
         initOtherView()
         initGroupData()
         upBookDataByGroupId()
@@ -134,71 +167,68 @@ class BookshelfManageActivity :
         }
     }
 
-    override fun onCompatCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.bookshelf_manage, menu)
-        return super.onCompatCreateOptionsMenu(menu)
+    private fun handleMenuAction(action: String, group: BookGroup?) {
+        when(action) {
+            "group_manage" -> showDialogFragment<GroupManageDialog>()
+            "open_book_info" -> {
+                AppConfig.openBookInfoByClickTitle = !AppConfig.openBookInfoByClickTitle
+                adapter.notifyItemRangeChanged(0, adapter.itemCount)
+            }
+            "export_all" -> viewModel.saveAllUseBookSourceToFile { file ->
+                exportDir.launch {
+                    mode = HandleFileContract.EXPORT
+                    fileData = HandleFileContract.FileData(
+                        "bookSource.json",
+                        file,
+                        "application/json"
+                    )
+                }
+            }
+            "group_select" -> if (group != null) {
+                viewModel.groupName = group.groupName
+                viewModel.groupId = group.groupId
+                upBookDataByGroupId()
+            }
+        }
     }
 
-    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        this.menu = menu
-        menu.findItem(R.id.menu_open_book_info_by_click_title)?.isChecked =
-            AppConfig.openBookInfoByClickTitle
-        upMenu()
-        return super.onPrepareOptionsMenu(menu)
+    private fun handleBottomMenuAction(action: String) {
+        when (action) {
+            "del_selection" -> alertDelSelection()
+            "update_enable" -> viewModel.upCanUpdate(adapter.selection, true)
+            "update_disable" -> viewModel.upCanUpdate(adapter.selection, false)
+            "add_to_group" -> selectGroup(addToGroupRequestCode, 0)
+            "change_source" -> showDialogFragment<SourcePickerDialog>()
+            "clear_cache" -> viewModel.clearCache(adapter.selection)
+            "check_selected_interval" -> adapter.checkSelectedInterval()
+        }
     }
 
-    override fun selectAll(selectAll: Boolean) {
+    private fun selectAll(selectAll: Boolean) {
         adapter.selectAll(selectAll)
     }
 
-    override fun revertSelection() {
+    private fun revertSelection() {
         adapter.revertSelection()
     }
 
-    override fun onClickSelectBarMainAction() {
+    private fun onClickSelectBarMainAction() {
         selectGroup(groupRequestCode, 0)
     }
 
-    private fun upTitle() {
-        searchView.queryHint = getString(R.string.screen) + " • " + viewModel.groupName
-    }
-
-    private fun initSearchView() {
-        searchView.applyLegadoPageSearchStyle()
-        searchView.isSubmitButtonEnabled = true
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                return false
-            }
-
-            override fun onQueryTextChange(newText: String?): Boolean {
-                upBookData()
-                return false
-            }
-
-        })
-    }
-
-    private fun initRecyclerView() {
-        binding.recyclerView.applyLegadoPageListStyle()
-        binding.recyclerView.layoutManager = LinearLayoutManager(this)
-        binding.recyclerView.addItemDecoration(VerticalDivider(this))
-        binding.recyclerView.adapter = adapter
+    private fun initRecyclerView(recyclerView: FastScrollRecyclerView) {
+        recyclerView.applyLegadoPageListStyle()
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.addItemDecoration(VerticalDivider(this))
+        recyclerView.adapter = adapter
         itemTouchCallback.isCanDrag = AppConfig.bookshelfSort == 3
-        val dragSelectTouchHelper: DragSelectTouchHelper =
-            DragSelectTouchHelper(adapter.dragSelectCallback).setSlideArea(16, 50)
-        dragSelectTouchHelper.attachToRecyclerView(binding.recyclerView)
-        // When this page is opened, it is in selection mode
+        val dragSelectTouchHelper = DragSelectTouchHelper(adapter.dragSelectCallback).setSlideArea(16, 50)
+        dragSelectTouchHelper.attachToRecyclerView(recyclerView)
         dragSelectTouchHelper.activeSlideSelect()
-        // Note: need judge selection first, so add ItemTouchHelper after it.
-        ItemTouchHelper(itemTouchCallback).attachToRecyclerView(binding.recyclerView)
+        ItemTouchHelper(itemTouchCallback).attachToRecyclerView(recyclerView)
     }
 
     private fun initOtherView() {
-        binding.selectActionBar.setMainActionText(R.string.move_to_group)
-        binding.selectActionBar.inflateMenu(R.menu.bookshelf_menage_sel)
-        binding.selectActionBar.setOnMenuItemClickListener(this)
-        binding.selectActionBar.setCallBack(this)
         waitDialog.setOnCancelListener {
             viewModel.batchChangeSourceCoroutine?.cancel()
         }
@@ -213,7 +243,6 @@ class BookshelfManageActivity :
                 groupList.clear()
                 groupList.addAll(it)
                 adapter.notifyDataSetChanged()
-                upMenu()
             }
         }
     }
@@ -224,104 +253,33 @@ class BookshelfManageActivity :
             val bookSort = AppConfig.getBookSortByGroupId(viewModel.groupId)
             appDb.bookDao.flowByGroup(viewModel.groupId).map { list ->
                 when (bookSort) {
-                    1 -> list.sortedByDescending {
-                        it.latestChapterTime
-                    }
-
-                    2 -> list.sortedWith { o1, o2 ->
-                        o1.name.cnCompare(o2.name)
-                    }
-
-                    3 -> list.sortedBy {
-                        it.order
-                    }
-
-                    4 -> list.sortedByDescending {
-                        max(it.latestChapterTime, it.durChapterTime)
-                    }
-
-                    else -> list.sortedByDescending {
-                        it.durChapterTime
-                    }
+                    1 -> list.sortedByDescending { it.latestChapterTime }
+                    2 -> list.sortedWith { o1, o2 -> o1.name.cnCompare(o2.name) }
+                    3 -> list.sortedBy { it.order }
+                    4 -> list.sortedByDescending { max(it.latestChapterTime, it.durChapterTime) }
+                    else -> list.sortedByDescending { it.durChapterTime }
                 }
             }.catch {
                 AppLog.put("书架管理界面获取书籍列表失败\n${it.localizedMessage}", it)
             }.flowOn(IO)
-                .conflate().collect {
-                    books = it
-                    upBookData()
-                    itemTouchCallback.isCanDrag = bookSort == 3
-                }
+            .conflate().collect {
+                books = it
+                upBookData()
+                itemTouchCallback.isCanDrag = bookSort == 3
+            }
         }
     }
 
     private fun upBookData() {
         books?.let { books ->
-            val searchKey = searchView.query
-            if (searchKey.isNullOrEmpty()) {
+            if (searchQuery.isEmpty()) {
                 adapter.setItems(books)
             } else {
                 books.filter {
-                    it.contains(searchKey.toString())
+                    it.contains(searchQuery)
                 }.let {
                     adapter.setItems(it)
                 }
-            }
-        }
-    }
-
-    override fun onCompatOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.menu_group_manage -> showDialogFragment<GroupManageDialog>()
-            R.id.menu_open_book_info_by_click_title -> {
-                AppConfig.openBookInfoByClickTitle = !item.isChecked
-                adapter.notifyItemRangeChanged(0, adapter.itemCount)
-            }
-
-            R.id.menu_export_all_use_book_source -> viewModel.saveAllUseBookSourceToFile { file ->
-                exportDir.launch {
-                    mode = HandleFileContract.EXPORT
-                    fileData = HandleFileContract.FileData(
-                        "bookSource.json",
-                        file,
-                        "application/json"
-                    )
-                }
-            }
-
-            else -> if (item.groupId == R.id.menu_group) {
-                viewModel.groupName = item.title.toString()
-                upTitle()
-                viewModel.groupId =
-                    appDb.bookGroupDao.getByName(item.title.toString())?.groupId ?: 0
-                upBookDataByGroupId()
-            }
-        }
-        return super.onCompatOptionsItemSelected(item)
-    }
-
-    override fun onMenuItemClick(item: MenuItem?): Boolean {
-        when (item?.itemId) {
-            R.id.menu_del_selection -> alertDelSelection()
-            R.id.menu_update_enable ->
-                viewModel.upCanUpdate(adapter.selection, true)
-
-            R.id.menu_update_disable ->
-                viewModel.upCanUpdate(adapter.selection, false)
-
-            R.id.menu_add_to_group -> selectGroup(addToGroupRequestCode, 0)
-            R.id.menu_change_source -> showDialogFragment<SourcePickerDialog>()
-            R.id.menu_clear_cache -> viewModel.clearCache(adapter.selection)
-            R.id.menu_check_selected_interval -> adapter.checkSelectedInterval()
-        }
-        return false
-    }
-
-    private fun upMenu() {
-        menu?.findItem(R.id.menu_book_group)?.subMenu?.let { subMenu ->
-            subMenu.removeGroup(R.id.menu_group)
-            groupList.forEach { bookGroup ->
-                subMenu.add(R.id.menu_group, bookGroup.order, Menu.NONE, bookGroup.groupName)
             }
         }
     }
@@ -377,7 +335,7 @@ class BookshelfManageActivity :
     }
 
     override fun upSelectCount() {
-        binding.selectActionBar.upCountView(adapter.selection.size, adapter.getItems().size)
+        selectCount = adapter.selection.size
     }
 
     override fun updateBook(vararg book: Book) {
@@ -418,5 +376,128 @@ class BookshelfManageActivity :
         viewModel.changeSource(adapter.selection, source)
         viewModel.batchChangeSourceState.value = true
     }
+}
 
+@Composable
+private fun BookshelfManageScreen(
+    query: String,
+    groupName: String,
+    selectCount: Int,
+    totalCount: Int,
+    groups: List<BookGroup>,
+    onQueryChange: (String) -> Unit,
+    onBackClick: () -> Unit,
+    onActionMenuClick: (String, BookGroup?) -> Unit,
+    onSelectAll: () -> Unit,
+    onRevertSelection: () -> Unit,
+    onMainAction: () -> Unit,
+    onBottomMenuClick: (String) -> Unit,
+    recyclerContent: @Composable (Modifier) -> Unit
+) {
+    Scaffold(
+        topBar = {
+            LegadoSearchAppBar(
+                query = query,
+                onQueryChange = onQueryChange,
+                placeholder = "筛选 • $groupName",
+                onBackClick = onBackClick,
+                actions = {
+                    LegadoMenuButton(
+                        icon = { Icon(Icons.Default.MoreVert, contentDescription = "更 多") }
+                    ) { dismiss ->
+                        DropdownMenuItem(
+                            text = { Text("分组管理") },
+                            onClick = { onActionMenuClick("group_manage", null); dismiss() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("单击打开书籍信息") },
+                            onClick = { onActionMenuClick("open_book_info", null); dismiss() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("书源导出含书籍验证") },
+                            onClick = { onActionMenuClick("export_all", null); dismiss() }
+                        )
+                        HorizontalDivider()
+                        groups.forEach { group ->
+                            DropdownMenuItem(
+                                text = { Text(group.groupName) },
+                                onClick = { onActionMenuClick("group_select", group); dismiss() }
+                            )
+                        }
+                    }
+                }
+            )
+        },
+        bottomBar = {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding(),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onSelectAll) {
+                        Text("全选")
+                    }
+                    TextButton(onClick = onRevertSelection) {
+                        Text("反选")
+                    }
+                    TextButton(onClick = onMainAction) {
+                        Text("移至分组", color = MaterialTheme.colorScheme.primary)
+                    }
+                    Text(
+                        text = "$selectCount/$totalCount",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                    LegadoMenuButton(
+                        icon = { Icon(Icons.Default.MoreVert, contentDescription = "更 多") }
+                    ) { dismiss ->
+                        DropdownMenuItem(
+                            text = { Text("删除选中内容") },
+                            onClick = { onBottomMenuClick("del_selection"); dismiss() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("允许选中书籍更新") },
+                            onClick = { onBottomMenuClick("update_enable"); dismiss() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("禁止选中书籍更新") },
+                            onClick = { onBottomMenuClick("update_disable"); dismiss() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("将选中书籍加到分组") },
+                            onClick = { onBottomMenuClick("add_to_group"); dismiss() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("批量换源") },
+                            onClick = { onBottomMenuClick("change_source"); dismiss() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("清理选中书籍缓存") },
+                            onClick = { onBottomMenuClick("clear_cache"); dismiss() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("间隔选中状态") },
+                            onClick = { onBottomMenuClick("check_selected_interval"); dismiss() }
+                        )
+                    }
+                }
+            }
+        }
+    ) { innerPadding ->
+        recyclerContent(
+            Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        )
+    }
 }

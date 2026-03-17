@@ -14,6 +14,7 @@ import io.legado.app.utils.getPrefBoolean
 import io.legado.app.utils.getPrefInt
 import io.legado.app.utils.getPrefString
 import splitties.init.appCtx
+import kotlin.math.pow
 import kotlin.math.roundToInt
 
 internal data class ThemeInputSnapshot(
@@ -64,7 +65,7 @@ internal fun interface DynamicThemeProvider {
 
 object ThemeResolver {
 
-    private const val DefaultDarkenFactor = 0.9f
+    private const val DEFAULT_DARKEN_FACTOR = 0.9f
 
     private const val TRANSPARENT = 0x00000000
 
@@ -232,9 +233,8 @@ object ThemeResolver {
         }
 
         val primaryContainer = blend(primary, resolvedBackground, if (input.isDark) 0.55f else 0.82f)
-        val secondary = accent
-        val secondaryContainer = blend(secondary, resolvedBackground, if (input.isDark) 0.55f else 0.86f)
-        val tertiary = blend(primary, secondary, if (input.isDark) 0.35f else 0.5f)
+        val secondaryContainer = blend(accent, resolvedBackground, if (input.isDark) 0.55f else 0.86f)
+        val tertiary = blend(primary, accent, if (input.isDark) 0.35f else 0.5f)
         val tertiaryContainer = blend(tertiary, resolvedBackground, if (input.isDark) 0.55f else 0.86f)
 
         if (input.hasBackgroundImage) {
@@ -243,7 +243,6 @@ object ThemeResolver {
             surfaceContainer = TRANSPARENT
         }
 
-        val toolbar = primary
         val statusBar = if (input.isTransparentStatusBar || input.hasBackgroundImage) {
             TRANSPARENT
         } else if (input.isDark) {
@@ -260,7 +259,7 @@ object ThemeResolver {
         return ThemeDraft(
             primary = primary,
             primaryContainer = primaryContainer,
-            secondary = secondary,
+            secondary = accent,
             secondaryContainer = secondaryContainer,
             tertiary = tertiary,
             tertiaryContainer = tertiaryContainer,
@@ -271,7 +270,7 @@ object ThemeResolver {
             onSurfaceVariant = onSurfaceVariant,
             outline = outline,
             accentCompat = accent,
-            toolbar = toolbar,
+            toolbar = primary,
             statusBar = statusBar,
             navigationBar = navigationBar,
             textPrimaryCompat = onSurface,
@@ -291,7 +290,7 @@ object ThemeResolver {
     }
 
     @ColorInt
-    private fun darken(@ColorInt color: Int, factor: Float = DefaultDarkenFactor): Int {
+    private fun darken(@ColorInt color: Int, factor: Float = DEFAULT_DARKEN_FACTOR): Int {
         val alpha = alpha(color)
         val r = (red(color) * factor).roundToInt().coerceIn(0, 255)
         val g = (green(color) * factor).roundToInt().coerceIn(0, 255)
@@ -305,7 +304,7 @@ object ThemeResolver {
             return if (normalized <= 0.03928) {
                 normalized / 12.92
             } else {
-                Math.pow((normalized + 0.055) / 1.055, 2.4)
+                ((normalized + 0.055) / 1.055).pow(2.4)
             }
         }
         val luminance =

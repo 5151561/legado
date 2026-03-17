@@ -134,14 +134,14 @@ Legado / 开源阅读 是一个 Android 平台上的开源阅读项目。按原�
 - [x] 阅读菜单改造成 Material 3 风格 Compose 菜单层
 - [x] 阅读菜单右上角更多功能入口恢复为 `ModalBottomSheet`
 - [x] 新界面接回原有后端数据与主要交互逻辑
+- [x] 发现页 Material 3 改造
+- [x] RSS / 订阅页 Material 3 改造
 
 ### 进行中 / 待完成
 
 - [ ] 阅读正文页面本体完全 Compose 化
 - [ ] 搜索菜单与阅读内其它弹层统一成 Material 3 风格
 - [ ] 阅读设置、翻页动画、排版配置等子面板继续重构
-- [ ] 发现页 Material 3 改造
-- [ ] RSS / 订阅页 Material 3 改造
 - [ ] 更多历史页面和设置入口的 Compose 化替换
 - [ ] 视觉细节、动效和状态过渡继续收口
 
